@@ -9,12 +9,12 @@ class QuestionOverlay extends StatefulWidget {
   final VoidCallback onClose;
 
   const QuestionOverlay({
-    Key? key,
+    super.key,
     required this.question,
     required this.onCorrectAnswer,
     required this.onWrongAnswer,
     required this.onClose,
-  }) : super(key: key);
+  });
 
   @override
   State<QuestionOverlay> createState() => _QuestionOverlayState();
@@ -145,8 +145,8 @@ class _QuestionOverlayState extends State<QuestionOverlay> {
                 right: 0,
                 child: Center(
                   child: Image.asset(
-                    'assets/images/player/knight.png',
-                    height: 80,
+                    'assets/images/player/Soldier_Idle.png',
+                    width: 24,
                     errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: MedievalColors.parchment, size: 80),
                   ),
                 ),

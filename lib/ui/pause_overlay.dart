@@ -171,7 +171,7 @@ class _PauseOverlayState extends State<PauseOverlay>
                             borderColor: MedievalColors.goldDark,
                             onTap: () async {
                               final authService = Provider.of<AuthService>(context, listen: false);
-                              await authService.signOut();
+                              await authService.logout();
                               if (!context.mounted) return;
                               Navigator.of(context).pop(); // Fecha o pause
                             },

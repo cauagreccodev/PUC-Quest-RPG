@@ -7,7 +7,7 @@ import '../database/firestore_service.dart';
 class AssetPaths {
   static const String battleBackground = 'assets/images/battle/battle.png';
   static const String battleBackground2 = 'assets/images/battle/battle2.png';
-  static const String playerSprite = 'assets/images/player/knight.png';
+  static const String playerSprite = 'assets/images/player/Soldier_Idle.png';
 }
 
 class AssetGenerators {
@@ -52,6 +52,7 @@ class _BattleScreenState extends State<BattleScreen>
 
   // Variáveis do modo Quiz
   bool isQuizMode = false;
+  bool isLoadingQuizzes = true;
   Map<String, dynamic>? currentQuiz;
   List<Map<String, dynamic>> _quizzes = [];
   final Set<String> _usedQuestions = {};
@@ -112,10 +113,16 @@ class _BattleScreenState extends State<BattleScreen>
       if (mounted) {
         setState(() {
           _quizzes = quizzes;
+          isLoadingQuizzes = false;
         });
       }
     } catch (e) {
       print('Erro ao carregar quizzes: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingQuizzes = false;
+        });
+      }
     }
   }
 
@@ -130,7 +137,8 @@ class _BattleScreenState extends State<BattleScreen>
     }).toList();
 
     if (validQuizzes.isEmpty) {
-      _showToast('Carregando dados ou nenhum quiz válido...');
+      _showToast('O inimigo bloqueou a ação! Analisando defesas...');
+      setState(() => isLoadingQuizzes = true);
       _loadQuizzes();
       return;
     }
@@ -163,8 +171,19 @@ class _BattleScreenState extends State<BattleScreen>
       isQuizMode = false;
     });
 
-    final correctAnswerIndex = currentQuiz!['correctAnswerIndex'] ?? currentQuiz!['resposta_correta'];
-    if (selectedIndex == correctAnswerIndex) {
+    dynamic correctAnswer = currentQuiz!['correctAnswerIndex'] ?? currentQuiz!['resposta_correta'];
+    int expectedIndex = -1;
+
+    if (correctAnswer is int) {
+      expectedIndex = correctAnswer;
+    } else if (correctAnswer is String) {
+      final options = currentQuiz!['options'] ?? currentQuiz!['opcoes'];
+      if (options is List) {
+        expectedIndex = options.indexWhere((opt) => opt.toString().trim() == correctAnswer.trim());
+      }
+    }
+
+    if (selectedIndex == expectedIndex || (expectedIndex == -1 && selectedIndex == 0)) {
       // Resposta correta: ataca
       final damage = 20 + _rng.nextInt(16); // Dano entre 20 e 35
       _executePlayerAction(damage: damage, logText: 'Resposta Correta!\nSOLDADO usou Luta!');
@@ -261,6 +280,9 @@ class _BattleScreenState extends State<BattleScreen>
           battleLog = '✓ VITÓRIA! Você venceu o NÚCLEO DE LÓGICA X!';
           isAnimating = false;
         });
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted) _closeGame();
+        });
         return;
       }
 
@@ -277,6 +299,9 @@ class _BattleScreenState extends State<BattleScreen>
       setState(() {
         battleLog = '✓ VITÓRIA! Você venceu o NÚCLEO DE LÓGICA X!';
         isAnimating = false;
+      });
+      Future.delayed(const Duration(seconds: 4), () {
+        if (mounted) _closeGame();
       });
       return;
     }
@@ -299,6 +324,9 @@ class _BattleScreenState extends State<BattleScreen>
         setState(() {
           battleLog = '✗ DERROTA! Você foi derrotado...';
           isPlayerTurn = false;
+        });
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted) _closeGame();
         });
       }
     });
@@ -407,9 +435,9 @@ class _BattleScreenState extends State<BattleScreen>
                   renderH * h,
                 );
 
-            final combatButton = hitbox(0.07, 0.85, 0.36, 0.12);
-            final bagButton = hitbox(0.57, 0.85, 0.36, 0.12);
-            final closeButton = hitbox(0.91, 0.01, 0.08, 0.06);
+            final combatButton = hitbox(0.08, 0.81, 0.30, 0.17);
+            final bagButton = hitbox(0.62, 0.81, 0.30, 0.17);
+            final closeButton = hitbox(0.88, 0.02, 0.10, 0.06);
 
             /// Sub-painel de dados do vilão (abaixo do bloco de título na arte).
             final villainDataPanel = hitbox(0.02, 0.178, 0.46, 0.148);
@@ -582,19 +610,34 @@ class _BattleScreenState extends State<BattleScreen>
                   ),
                 ),
 
-                if (isGameOver)
+                if (isLoadingQuizzes)
                   Positioned.fill(
                     child: Container(
-                      color: Colors.black54,
-                      child: Center(
-                        child: ElevatedButton(
-                          onPressed: _closeGame,
-                          child: Text(
-                            enemyHp <= 0
-                                ? 'Vitória - Voltar'
-                                : 'Derrota - Voltar',
+                      color: Colors.black.withOpacity(0.85),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          CircularProgressIndicator(color: Colors.redAccent),
+                          SizedBox(height: 24),
+                          Text(
+                            'ANALISANDO PADRÕES DO INIMIGO...',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 18,
+                              fontFamily: 'Courier',
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(1, 1),
+                                  blurRadius: 2,
+                                  color: Colors.black,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),

@@ -38,7 +38,7 @@ class QuestionsData {
       estagio: 1,
       dificuldade: 2,
       pergunta: "De acordo com as Leis de Morgan, a negação de uma disjunção, expressa como NOT (P OR Q), é logicamente equivalente a qual destas expressões?",
-      opcoes: ["(NOT P) AND (NOT Q)", "(NOT P) OR (NOT Q)", "(NOT P) OR (NOT Q)", "P OR (NOT Q)"],
+      opcoes: ["(NOT P) AND (NOT Q)", "(NOT P) OR (NOT Q)", "NOT (P AND Q)", "P OR (NOT Q)"],
       respostaCorreta: "(NOT P) AND (NOT Q)",
     ),
     Question(
@@ -71,7 +71,7 @@ class QuestionsData {
       id: "69cd4cb215dd55e31683918b",
       estagio: 1,
       dificuldade: 3,
-      pergunta: "Uma Contradição é uma proposição que sempre resulta em Falso (0). Qual das expressões abaixo representa uma contradição lógica?",
+      pergunta: "De acordo com a propriedade da Idempotência, a expressão (P OR P) é logicamente equivalente a quê?",
       opcoes: ["P", "Q", "P AND Q", 1],
       respostaCorreta: "P",
     ),

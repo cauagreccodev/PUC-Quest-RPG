@@ -14,6 +14,7 @@ import 'dart:math';
 import 'ui/question_overlay.dart';
 import 'data/questions.dart';
 import 'ui/battle_screen.dart'; // Import da tela de batalha
+import 'ui/guide_dialog.dart'; // Import do guide dialog
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,10 +23,11 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
   runApp(
     MultiProvider(
       providers: [
-        Provider<AuthService>(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => GeolocationService()),
         ChangeNotifierProvider(create: (_) => PlayerStateModel()),
       ],
@@ -80,6 +82,7 @@ class _GameScreenState extends State<GameScreen> {
   late final PIRPGGame _game;
 
   bool _initialized = false;
+  bool _showGuide = true;
 
   @override
   void didChangeDependencies() {
@@ -129,65 +132,43 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  void _startPhaseChallenge(String phaseId) {
-    int phaseNum = 1; 
-    if (phaseId == 'fase_loops') phaseNum = 2;
-
+  void _startPhaseChallenge(String phaseId) async {
     final playerState = Provider.of<PlayerStateModel>(context, listen: false);
     if (playerState.isPhaseDefeated(phaseId)) {
        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('A ameaça desta região já foi eliminada!')));
        return;
     }
 
-    final questions = QuestionsData.getQuestionsForPhase(phaseNum);
-    if (questions.isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sábios ainda estão elaborando os desafios desta região!')));
-       return;
-    }
-    
-    // Sorteia uma pergunta da fase selecionada
-    final question = questions[Random().nextInt(questions.length)];
-
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: 'Desafio',
-      barrierColor: Colors.black.withAlpha(200),
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (context, anim1, anim2) => QuestionOverlay(
-        question: question,
-        onClose: () => Navigator.pop(context),
-        onCorrectAnswer: () {
-          Navigator.pop(context);
-          final pState = Provider.of<PlayerStateModel>(context, listen: false);
-          pState.markPhaseDefeated(phaseId);
-          pState.addItem(GameItem(
-            id: 'carta_cura_$phaseId',
-            name: 'Carta de Regeneração',
-            description: 'Recupera 75 HP instantaneamente.',
-            icon: '❤️',
-          ));
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Boss Derrotado! Você recebeu uma Carta de Regeneração!')));
-        },
-        onWrongAnswer: () {
-          Navigator.pop(context);
-          Provider.of<PlayerStateModel>(context, listen: false).takeDamage(50);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ataque do Boss! Você perdeu 50 HP!')));
-        },
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BattleScreen(phaseId: phaseId),
       ),
-      transitionBuilder: (context, anim1, anim2, child) {
-        return ScaleTransition(
-          scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
-          child: child,
-        );
-      },
     );
+
+    if (result == true) {
+      if (!context.mounted) return;
+      final pState = Provider.of<PlayerStateModel>(context, listen: false);
+      pState.markPhaseDefeated(phaseId);
+      pState.addItem(GameItem(
+        id: 'carta_cura_$phaseId',
+        name: 'Carta de Regeneração',
+        description: 'Recupera 75 HP instantaneamente.',
+        icon: '❤️',
+      ));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Boss Derrotado! Você recebeu uma Carta de Regeneração!')));
+    } else if (result == false) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Você fugiu ou foi derrotado... Tente novamente!')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final geoService = Provider.of<GeolocationService>(context);
     final playerState = Provider.of<PlayerStateModel>(context);
+    final authService = Provider.of<AuthService>(context);
+    final playerName = authService.currentUser?.name ?? 'Aventureiro';
 
     final locationName = geoService.isInsideCampus() ? 'REINO DA PUC' : 'TERRAS SELVAGENS';
     final locationColor = geoService.isInsideCampus() ? MedievalColors.emeraldLight : MedievalColors.crimsonLight;
@@ -258,6 +239,7 @@ class _GameScreenState extends State<GameScreen> {
               onTap: _openProfile,
               hp: playerState.hp,
               maxHp: playerState.maxHp,
+              playerName: playerName,
             ),
           ),
 
@@ -304,6 +286,26 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
             
+          // Guide Dialog
+          if (_showGuide)
+            Positioned(
+              bottom: 90,
+              left: 16,
+              right: 16,
+              child: DialogBox(
+                characterName: 'Mestre Ancião',
+                messages: [
+                  'Saudações, $playerName!',
+                  'Sua jornada começa agora. Explore os locais no mapa e enfrente os desafios das trevas!',
+                ],
+                onFinished: () {
+                  setState(() {
+                    _showGuide = false;
+                  });
+                },
+              ),
+            ),
+
           // Heal Card FAB in bottom left
           if (healCard != null)
             Positioned(
@@ -408,8 +410,9 @@ class _CompactProfile extends StatelessWidget {
   final VoidCallback onTap;
   final int hp;
   final int maxHp;
+  final String playerName;
 
-  const _CompactProfile({required this.onTap, required this.hp, required this.maxHp});
+  const _CompactProfile({required this.onTap, required this.hp, required this.maxHp, required this.playerName});
 
   @override
   Widget build(BuildContext context) {
@@ -423,7 +426,7 @@ class _CompactProfile extends StatelessWidget {
             children: [
               Text('$hp / $maxHp HP', style: const TextStyle(color: MedievalColors.crimsonLight, fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 2),
-              const Text('PERFIL', style: TextStyle(color: MedievalColors.gold, fontSize: 8, fontWeight: FontWeight.bold)),
+              Text(playerName.toUpperCase(), style: const TextStyle(color: MedievalColors.gold, fontSize: 8, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(width: 10),

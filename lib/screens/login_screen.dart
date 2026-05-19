@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../main.dart'; // Para acessar a GameScreen
-import '../ui/battle_screen.dart'; // Para o teste do estágio 1
+// Para o teste do estágio 1
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -52,24 +52,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleGoogleLogin() async {
     setState(() => _isLoading = true);
-    final user = await _authService.signInWithGoogle();
+    final success = await _authService.loginWithProvider('Google');
     
     if (mounted) {
       setState(() => _isLoading = false);
-      if (user == null) {
-        final error = _authService.lastError ?? 'Pop-up bloqueado?';
-        _showMessage('Falha no Google: $error');
+      if (!success) {
+        _showMessage('Falha no Google.');
       }
     }
   }
 
   void _handleAnonymousLogin() async {
     setState(() => _isLoading = true);
-    final user = await _authService.signInAnonymously();
+    final success = await _authService.loginWithProvider('Visitante');
     
     if (mounted) {
       setState(() => _isLoading = false);
-      if (user == null) {
+      if (!success) {
         _showMessage('O feitiço falhou. Verifique sua conexão.');
       }
     }
@@ -77,13 +76,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleFacebookLogin() async {
     setState(() => _isLoading = true);
-    final user = await _authService.signInWithFacebook();
+    final success = await _authService.loginWithProvider('Facebook');
     
     if (mounted) {
       setState(() => _isLoading = false);
-      if (user == null) {
-        final error = _authService.lastError ?? 'Erro desconhecido';
-        _showMessage('Falha no Facebook: $error');
+      if (!success) {
+        _showMessage('Falha no Facebook.');
       }
     }
   }

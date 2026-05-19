@@ -1,127 +1,109 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import '../database/firestore_service.dart';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: kIsWeb ? '106292251398-s8dl9m4o5jvppd0669m8r6tu4qrpm3j6.apps.googleusercontent.com' : null,
-    serverClientId: kIsWeb ? null : '106292251398-s8dl9m4o5jvppd0669m8r6tu4qrpm3j6.apps.googleusercontent.com',
+class AuthUser {
+  final String email;
+  final String password;
+  final String name;
+
+  AuthUser({required this.email, required this.password, required this.name});
+
+  Map<String, dynamic> toJson() => {
+    'email': email,
+    'password': password,
+    'name': name,
+  };
+
+  factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
+    email: json['email'],
+    password: json['password'],
+    name: json['name'],
   );
-  final FirestoreService _firestoreService = FirestoreService();
+}
 
-  // Obter o usuário atual
-  User? get currentUser => _auth.currentUser;
+class AuthService extends ChangeNotifier {
+  AuthUser? _currentUser;
+  bool _isLoading = true;
 
-  // Armazenar o último erro para exibição
-  String? lastError;
+  AuthUser? get currentUser => _currentUser;
+  bool get isLoading => _isLoading;
+  bool get isAuthenticated => _currentUser != null;
 
-  // Stream de mudança de estado de autenticação
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  // Login Anônimo (Visitante)
-  Future<UserCredential?> signInAnonymously() async {
-    try {
-      return await _auth.signInAnonymously();
-    } catch (e) {
-      print("Erro no Login Anônimo: $e");
-      return null;
-    }
+  AuthService() {
+    _loadSession();
   }
 
-  // Login com Google
-  Future<UserCredential?> signInWithGoogle() async {
-    try {
-      if (kIsWeb) {
-        GoogleAuthProvider authProvider = GoogleAuthProvider();
-        final userCredential = await _auth.signInWithPopup(authProvider);
-        if (userCredential.user != null) {
-          await _firestoreService.createUserProfile(userCredential.user!);
-        }
-        return userCredential;
-      }
-
-      // Inicia o fluxo de autenticação do Google
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // O usuário cancelou o login
-
-      // Obtém os detalhes de autenticação do pedido (tokens)
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      // Cria a credencial para o Firebase
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Autentica no Firebase com a credencial
-      final userCredential = await _auth.signInWithCredential(credential);
-      
-      // Cria/verifica o perfil no Firestore
-      if (userCredential.user != null) {
-        await _firestoreService.createUserProfile(userCredential.user!);
-      }
-      
-      return userCredential;
-    } catch (e) {
-      lastError = e.toString();
-      print("Erro no Login com Google: $e");
-      return null;
+  Future<void> _loadSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString('auth_user');
+    if (userJson != null) {
+      _currentUser = AuthUser.fromJson(jsonDecode(userJson));
     }
+    _isLoading = false;
+    notifyListeners();
   }
 
-  // Login com Facebook
-  Future<UserCredential?> signInWithFacebook() async {
-    try {
-      if (kIsWeb) {
-        FacebookAuthProvider authProvider = FacebookAuthProvider();
-        final userCredential = await _auth.signInWithPopup(authProvider);
-        if (userCredential.user != null) {
-          await _firestoreService.createUserProfile(userCredential.user!);
-        }
-        return userCredential;
+  Future<bool> login(String email, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    final usersList = prefs.getStringList('registered_users') ?? [];
+
+    for (var userStr in usersList) {
+      final user = AuthUser.fromJson(jsonDecode(userStr));
+      if (user.email == email && user.password == password) {
+        _currentUser = user;
+        await prefs.setString('auth_user', jsonEncode(user.toJson()));
+        notifyListeners();
+        return true;
       }
-
-      // Inicia o fluxo de autenticação do Facebook
-      final LoginResult result = await FacebookAuth.instance.login();
-
-      if (result.status == LoginStatus.success) {
-        // Cria a credencial para o Firebase usando o token de acesso do Facebook
-        final credential =
-            FacebookAuthProvider.credential(result.accessToken!.tokenString);
-
-        // Autentica no Firebase com a credencial
-        final userCredential = await _auth.signInWithCredential(credential);
-        
-        // Cria/verifica o perfil no Firestore
-        if (userCredential.user != null) {
-          await _firestoreService.createUserProfile(userCredential.user!);
-        }
-        
-        return userCredential;
-      } else {
-        print("Login com Facebook falhou ou foi cancelado: ${result.status}");
-        lastError = "Status: ${result.status}";
-        return null;
-      }
-    } catch (e) {
-      lastError = e.toString();
-      print("Erro no Login com Facebook: $e");
-      return null;
     }
+    return false;
   }
 
-  // Logout (Deslogar de todos os provedores)
-  Future<void> signOut() async {
-    try {
-      await _googleSignIn.signOut();
-      await FacebookAuth.instance.logOut();
-      await _auth.signOut();
-    } catch (e) {
-      print("Erro ao deslogar: $e");
+  Future<bool> register(String email, String password, String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    final usersList = prefs.getStringList('registered_users') ?? [];
+
+    // Check if user already exists
+    for (var userStr in usersList) {
+      final user = AuthUser.fromJson(jsonDecode(userStr));
+      if (user.email == email) return false;
     }
+
+    final newUser = AuthUser(email: email, password: password, name: name);
+    usersList.add(jsonEncode(newUser.toJson()));
+    await prefs.setStringList('registered_users', usersList);
+    
+    // Auto login
+    _currentUser = newUser;
+    await prefs.setString('auth_user', jsonEncode(newUser.toJson()));
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_user');
+    _currentUser = null;
+    notifyListeners();
+  }
+
+  Future<bool> loginWithProvider(String provider) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 2));
+    
+    final newUser = AuthUser(
+      email: '${provider.toLowerCase()}@social.com',
+      password: '',
+      name: 'Herói do $provider',
+    );
+    
+    _currentUser = newUser;
+    _isLoading = false;
+    notifyListeners();
+    return true;
   }
 }
