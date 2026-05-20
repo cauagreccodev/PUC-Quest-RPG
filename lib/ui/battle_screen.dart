@@ -439,15 +439,15 @@ class _BattleScreenState extends State<BattleScreen>
             final bagButton = hitbox(0.62, 0.81, 0.30, 0.17);
             final closeButton = hitbox(0.88, 0.02, 0.10, 0.06);
 
-            /// Sub-painel de dados do vilão (abaixo do bloco de título na arte).
-            final villainDataPanel = hitbox(0.02, 0.178, 0.46, 0.148);
+            /// Sub-painel de dados do vilão (agora na direita).
+            final villainDataPanel = hitbox(0.52, 0.15, 0.44, 0.12);
 
-            /// Display tático do soldado (canto superior direito).
-            final soldierDataPanel = hitbox(0.62, 0.08, 0.34, 0.14);
-            final battleLogArea = hitbox(0.05, 0.65, 0.90, 0.11);
+            /// Display tático do soldado (agora na esquerda).
+            final soldierDataPanel = hitbox(0.04, 0.23, 0.41, 0.13);
+            final battleLogArea = hitbox(0.05, 0.61, 0.90, 0.16);
 
-            final quizQuestionArea = hitbox(0.05, 0.63, 0.90, 0.13);
-            final quizAnswersArea = hitbox(0.05, 0.78, 0.90, 0.19);
+            final quizQuestionArea = hitbox(0.05, 0.61, 0.90, 0.16);
+            final quizAnswersArea = hitbox(0.05, 0.79, 0.90, 0.19);
 
             return Stack(
               children: [
@@ -486,28 +486,33 @@ class _BattleScreenState extends State<BattleScreen>
                 if (!isQuizMode) ...[
                   Positioned.fromRect(
                     rect: battleLogArea,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Text(
-                        battleLog,
-                        textAlign: TextAlign.left,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Courier',
-                          shadows: [
-                            Shadow(
-                              offset: Offset(1, 1),
-                              blurRadius: 2,
-                              color: Colors.black,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SizedBox(
+                            width: renderW * 0.8,
+                            child: Text(
+                              battleLog,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Courier',
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(1, 1),
+                                    blurRadius: 2,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -549,22 +554,29 @@ class _BattleScreenState extends State<BattleScreen>
                     child: Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Text(
-                          (currentQuiz?['question'] ?? currentQuiz?['pergunta'])?.toString() ?? 'Pergunta não encontrada',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Courier',
-                            shadows: [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 2,
-                                color: Colors.black,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SizedBox(
+                            width: renderW * 0.8,
+                            child: Text(
+                              (currentQuiz?['question'] ?? currentQuiz?['pergunta'])?.toString() ?? 'Pergunta não encontrada',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Courier',
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(1, 1),
+                                    blurRadius: 2,
+                                    color: Colors.black,
+                                  ),
+                                ],
                               ),
-                            ],
+                              textAlign: TextAlign.center,
+                              maxLines: 5,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
@@ -826,12 +838,17 @@ class VillainHealthField extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              width: 180,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                 _BossEnergyHpBar(value: healthPercent.clamp(0.0, 1.0)),
                 const SizedBox(height: 8),
                 Row(
@@ -860,6 +877,8 @@ class VillainHealthField extends StatelessWidget {
                   style: _BattleHudText.flavorEnemy(9),
                 ),
               ],
+            ),
+          ),
             ),
           ),
           ..._cornerBolts(),
@@ -1018,12 +1037,17 @@ class SoldierHealthField extends StatelessWidget {
           Positioned.fill(
             child: CustomPaint(painter: _TacticalGridBgPainter()),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 3),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 170,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 3),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -1051,7 +1075,7 @@ class SoldierHealthField extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Soldado',
-                        style: _BattleHudText.flavorSoldier(9),
+                        style: _BattleHudText.flavorSoldier(14),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1061,7 +1085,7 @@ class SoldierHealthField extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'ESTADO DE COMBATE',
-                  style: _BattleHudText.flavorSoldier(7),
+                  style: _BattleHudText.flavorSoldier(10),
                 ),
                 const SizedBox(height: 4),
                 SizedBox(
@@ -1091,6 +1115,8 @@ class SoldierHealthField extends StatelessWidget {
                   ],
                 ),
               ],
+            ),
+          ),
             ),
           ),
           ..._soldierCornerBolts(),
