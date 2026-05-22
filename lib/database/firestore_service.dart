@@ -157,6 +157,38 @@ class FirestoreService {
     return snapshot.docs.map((doc) => doc.data()).toList();
   }
 
+  /// Busca o nome do chefão pelo estágio
+  Future<String> getBossNameByEstagio(int estagio) async {
+    try {
+      final snapshot = await _db.collection(_bossesCollection)
+          .where('estagio', isEqualTo: estagio)
+          .limit(1)
+          .get();
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        return data['nome'] ?? data['name'] ?? 'Chefe Desconhecido';
+      }
+      
+      final stringSnapshot = await _db.collection(_bossesCollection)
+          .where('estagio', isEqualTo: estagio.toString())
+          .limit(1)
+          .get();
+      if (stringSnapshot.docs.isNotEmpty) {
+        final data = stringSnapshot.docs.first.data();
+        return data['nome'] ?? data['name'] ?? 'Chefe Desconhecido';
+      }
+    } catch (e) {
+      print("Erro ao buscar boss: $e");
+    }
+    
+    switch (estagio) {
+      case 1: return 'NÚCLEO DE LÓGICA X';
+      case 2: return 'MESTRE DAS FINANÇAS';
+      case 3: return 'ESFINGE DA LINGUAGEM';
+      default: return 'INIMIGO DESCONHECIDO';
+    }
+  }
+
   // ==========================================
   // QUIZZES (Desafios Educacionais)
   // ==========================================

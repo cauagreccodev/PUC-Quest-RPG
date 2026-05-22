@@ -5,8 +5,8 @@ import '../models/player_state_model.dart';
 import '../database/firestore_service.dart';
 
 class AssetPaths {
-  static const String battleBackground = 'assets/images/battle/battle.png';
-  static const String battleBackground2 = 'assets/images/battle/battle2.png';
+  static String battleBackground(int estagio) => 'assets/images/stages/stage$estagio/battle.png';
+  static String battleBackground2(int estagio) => 'assets/images/stages/stage$estagio/battle2.png';
   static const String playerSprite = 'assets/images/player/Soldier_Idle.png';
 }
 
@@ -26,8 +26,9 @@ class AssetGenerators {
 
 class BattleScreen extends StatefulWidget {
   final String? phaseId;
+  final int estagio;
 
-  const BattleScreen({super.key, this.phaseId});
+  const BattleScreen({super.key, this.phaseId, this.estagio = 1});
 
   @override
   State<BattleScreen> createState() => _BattleScreenState();
@@ -43,7 +44,7 @@ class _BattleScreenState extends State<BattleScreen>
   int enemyHp = 100;
   int enemyMaxHp = 100;
   bool isPlayerTurn = true;
-  String battleLog = 'O NÚCLEO DE LÓGICA X selvagem apareceu! Vá, SOLDADO!';
+  String battleLog = 'Acessando dados do alvo...';
   bool isAnimating = false;
   int playerLevel = 50;
   int healKits = 2;
@@ -57,6 +58,8 @@ class _BattleScreenState extends State<BattleScreen>
   List<Map<String, dynamic>> _quizzes = [];
   final Set<String> _usedQuestions = {};
   final FirestoreService _dbService = FirestoreService();
+
+  String bossName = 'Inimigo Desconhecido';
 
   // Animação
   late AnimationController _damageController;
@@ -109,10 +112,19 @@ class _BattleScreenState extends State<BattleScreen>
       // Garante que o banco tem os quizzes caso a coleção esteja vazia
       await _dbService.seedDatabase();
       
-      final quizzes = await _dbService.getAllQuizzes();
+      final allQuizzes = await _dbService.getAllQuizzes();
+      // Filtra pelo estágio requisitado
+      final quizzes = allQuizzes.where((q) {
+        return q['estagio'] == widget.estagio || q['estagio'] == widget.estagio.toString();
+      }).toList();
+
+      final fetchedBossName = await _dbService.getBossNameByEstagio(widget.estagio);
+
       if (mounted) {
         setState(() {
           _quizzes = quizzes;
+          bossName = fetchedBossName;
+          battleLog = '$bossName apareceu! Vá, SOLDADO!';
           isLoadingQuizzes = false;
         });
       }
@@ -127,7 +139,7 @@ class _BattleScreenState extends State<BattleScreen>
   }
 
   void _playerAttack() {
-    if (isAnimating || !isPlayerTurn) return;
+    if (isAnimating || !isPlayerTurn || isLoadingQuizzes) return;
 
     final validQuizzes = _quizzes.where((q) {
       final hasQuestion = q['question'] != null || q['pergunta'] != null;
@@ -259,37 +271,47 @@ class _BattleScreenState extends State<BattleScreen>
   }) {
     if (enemyHp <= 0 || playerHp <= 0) return;
 
+    // Primeiro passo: mostra a ação do jogador
     setState(() {
       isAnimating = true;
       isPlayerTurn = false;
-      _enemyHitFlash = true;
+      battleLog = logText;
       if (nextSkillCooldown > 0) {
         skillCooldown = nextSkillCooldown;
       }
-      enemyHp = (enemyHp - damage).clamp(0, enemyMaxHp);
-      battleLog = '$logText\n$damage de dano no inimigo!';
     });
 
-    _damageController.forward().then((_) {
-      if (!mounted) return;
-      _damageController.reset();
-      setState(() => _enemyHitFlash = false);
+    // Aguarda um pequeno intervalo para o "golpe" conectar
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (!mounted || enemyHp <= 0 || playerHp <= 0) return;
 
-      if (enemyHp <= 0) {
-        setState(() {
-          battleLog = '✓ VITÓRIA! Você venceu o NÚCLEO DE LÓGICA X!';
-          isAnimating = false;
-        });
-        Future.delayed(const Duration(seconds: 4), () {
-          if (mounted) _closeGame();
-        });
-        return;
-      }
-
-      // Em um jogo de quiz, o chefe normalmente não contra-ataca quando você acerta.
       setState(() {
-        isAnimating = false;
-        isPlayerTurn = true;
+        _enemyHitFlash = true;
+        enemyHp = (enemyHp - damage).clamp(0, enemyMaxHp);
+        battleLog = '$logText\n$damage de dano no inimigo!';
+      });
+
+      _damageController.forward().then((_) {
+        if (!mounted) return;
+        _damageController.reset();
+        setState(() => _enemyHitFlash = false);
+
+        if (enemyHp <= 0) {
+          setState(() {
+            battleLog = '✓ VITÓRIA! Você venceu o $bossName!';
+            isAnimating = false;
+          });
+          Future.delayed(const Duration(seconds: 4), () {
+            if (mounted) _closeGame();
+          });
+          return;
+        }
+
+        // Em um jogo de quiz, o chefe normalmente não contra-ataca quando você acerta.
+        setState(() {
+          isAnimating = false;
+          isPlayerTurn = true;
+        });
       });
     });
   }
@@ -297,7 +319,7 @@ class _BattleScreenState extends State<BattleScreen>
   void _enemyAttack() {
     if (enemyHp <= 0) {
       setState(() {
-        battleLog = '✓ VITÓRIA! Você venceu o NÚCLEO DE LÓGICA X!';
+        battleLog = '✓ VITÓRIA! Você venceu o $bossName!';
         isAnimating = false;
       });
       Future.delayed(const Duration(seconds: 4), () {
@@ -312,7 +334,7 @@ class _BattleScreenState extends State<BattleScreen>
       final damage = 25 + _rng.nextInt(11); // Dano entre 25 e 35
       setState(() {
         playerHp = (playerHp - damage).clamp(0, playerMaxHp);
-        battleLog = 'NÚCLEO usou Raio Lógico!\n$damage de dano!';
+        battleLog = '$bossName usou Raio Lógico!\n$damage de dano!';
         isAnimating = false;
         isPlayerTurn = playerHp > 0;
         if (skillCooldown > 0) {
@@ -333,7 +355,7 @@ class _BattleScreenState extends State<BattleScreen>
   }
 
   void _openBackpack() {
-    if (isAnimating || !isPlayerTurn) return;
+    if (isAnimating || !isPlayerTurn || isLoadingQuizzes) return;
     if (healKits <= 0) {
       _showToast('Mochila vazia: sem kit de reparo.');
       return;
@@ -360,7 +382,7 @@ class _BattleScreenState extends State<BattleScreen>
   }
 
   void _attemptRun() {
-    if (isAnimating || !isPlayerTurn) return;
+    if (isAnimating || !isPlayerTurn || isLoadingQuizzes) return;
     final escaped = _rng.nextDouble() < 0.35;
     if (escaped) {
       Navigator.pop(context, false);
@@ -439,11 +461,11 @@ class _BattleScreenState extends State<BattleScreen>
             final bagButton = hitbox(0.62, 0.81, 0.30, 0.17);
             final closeButton = hitbox(0.88, 0.02, 0.10, 0.06);
 
-            /// Sub-painel de dados do vilão (agora na direita).
-            final villainDataPanel = hitbox(0.52, 0.15, 0.44, 0.12);
+            /// Sub-painel de dados do vilão (agora na esquerda).
+            final villainDataPanel = hitbox(0.04, 0.18, 0.44, 0.12);
 
-            /// Display tático do soldado (agora na esquerda).
-            final soldierDataPanel = hitbox(0.04, 0.23, 0.41, 0.13);
+            /// Display tático do soldado (agora na direita embaixo).
+            final soldierDataPanel = hitbox(0.55, 0.50, 0.41, 0.13);
             final battleLogArea = hitbox(0.05, 0.61, 0.90, 0.16);
 
             final quizQuestionArea = hitbox(0.05, 0.61, 0.90, 0.16);
@@ -457,7 +479,7 @@ class _BattleScreenState extends State<BattleScreen>
                       width: renderW,
                       height: renderH,
                       child: Image.asset(
-                        isQuizMode ? AssetPaths.battleBackground2 : AssetPaths.battleBackground,
+                        isQuizMode ? AssetPaths.battleBackground2(widget.estagio) : AssetPaths.battleBackground(widget.estagio),
                         fit: BoxFit.fill,
                       ),
                     ),
@@ -467,7 +489,11 @@ class _BattleScreenState extends State<BattleScreen>
                 Positioned.fromRect(
                   rect: villainDataPanel,
                   child: IgnorePointer(
-                    child: VillainHealthField(hp: enemyHp, maxHp: enemyMaxHp),
+                    child: VillainHealthField(
+                      hp: enemyHp, 
+                      maxHp: enemyMaxHp, 
+                      bossName: bossName,
+                    ),
                   ),
                 ),
 
@@ -622,37 +648,7 @@ class _BattleScreenState extends State<BattleScreen>
                   ),
                 ),
 
-                if (isLoadingQuizzes)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.black.withOpacity(0.85),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          CircularProgressIndicator(color: Colors.redAccent),
-                          SizedBox(height: 24),
-                          Text(
-                            'ANALISANDO PADRÕES DO INIMIGO...',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 18,
-                              fontFamily: 'Courier',
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(1, 1),
-                                  blurRadius: 2,
-                                  color: Colors.black,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+
               ],
             );
           },
@@ -663,7 +659,7 @@ class _BattleScreenState extends State<BattleScreen>
 
   Widget _buildBackground() {
     return Image.asset(
-      AssetPaths.battleBackground,
+      AssetPaths.battleBackground(widget.estagio),
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
         return Container(
@@ -806,8 +802,14 @@ class _BattleHudText {
 class VillainHealthField extends StatelessWidget {
   final int hp;
   final int maxHp;
+  final String bossName;
 
-  const VillainHealthField({super.key, required this.hp, required this.maxHp});
+  const VillainHealthField({
+    super.key, 
+    required this.hp, 
+    required this.maxHp, 
+    required this.bossName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -849,6 +851,29 @@ class VillainHealthField extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 14),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          bossName.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Courier',
+                            shadows: [Shadow(offset: Offset(1, 1), blurRadius: 1, color: Colors.black)],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 _BossEnergyHpBar(value: healthPercent.clamp(0.0, 1.0)),
                 const SizedBox(height: 8),
                 Row(
@@ -869,12 +894,6 @@ class VillainHealthField extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                Text('SOMBRA METÁLICA', style: _BattleHudText.flavorEnemy(9)),
-                Text(
-                  'ARMADURA NEGRA ATIVADA',
-                  style: _BattleHudText.flavorEnemy(9),
                 ),
               ],
             ),
@@ -933,13 +952,21 @@ class _BossEnergyHpBar extends StatelessWidget {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.centerLeft,
-              widthFactor: value.clamp(0.0, 1.0),
-              child: CustomPaint(
-                painter: _BossHpFillPainter(),
-                child: const SizedBox.expand(),
-              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return Align(
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeOutCubic,
+                    width: constraints.maxWidth * value.clamp(0.0, 1.0),
+                    child: CustomPaint(
+                      painter: _BossHpFillPainter(),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                );
+              },
             ),
             CustomPaint(
               painter: _EnergyGridOverlayPainter(),
@@ -1185,13 +1212,21 @@ class _TacticalEnergyHpBar extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Container(color: const Color(0xFF0A1628)),
-            Align(
-              alignment: Alignment.centerLeft,
-              widthFactor: value.clamp(0.0, 1.0),
-              child: CustomPaint(
-                painter: _SoldierHpFillPainter(),
-                child: const SizedBox.expand(),
-              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return Align(
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeOutCubic,
+                    width: constraints.maxWidth * value.clamp(0.0, 1.0),
+                    child: CustomPaint(
+                      painter: _SoldierHpFillPainter(),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                );
+              },
             ),
             CustomPaint(
               painter: _EnergyGridOverlayPainter(),

@@ -70,9 +70,12 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/images/battle/
     - assets/images/cards/
     - assets/images/player/
+    - assets/images/stages/stage1/
+    - assets/images/stages/stage2/
+    - assets/images/stages/stage3/
+    - assets/images/stages/stage4/
     - assets/images/ui/
     - assets/tiles/
 

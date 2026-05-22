@@ -212,10 +212,64 @@ class _GameScreenState extends State<GameScreen> {
                   const SizedBox(width: 16),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const BattleScreen(phaseId: 'test_phase'),
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: Colors.black87,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(color: Colors.amber, width: 2),
+                          ),
+                          title: const Text('Escolher Estágio', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.looks_one, color: Colors.white),
+                                title: const Text('Estágio 1', style: TextStyle(color: Colors.white)),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 1)),
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.looks_two, color: Colors.white),
+                                title: const Text('Estágio 2', style: TextStyle(color: Colors.white)),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 2)),
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.looks_3, color: Colors.white),
+                                title: const Text('Estágio 3', style: TextStyle(color: Colors.white)),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 3)),
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.looks_4, color: Colors.white),
+                                title: const Text('Estágio 4', style: TextStyle(color: Colors.white)),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 4)),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
