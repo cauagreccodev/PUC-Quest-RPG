@@ -38,6 +38,15 @@ dependencies:
   flame_tiled: ^3.1.0
   geolocator: ^14.0.2
   provider: ^6.1.5+1
+  firebase_core: ^4.7.0
+  cloud_firestore: ^6.3.0
+  firebase_auth: ^6.4.0
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^7.1.6
+  shared_preferences: ^2.5.5
+  google_fonts: ^8.1.0
+  flutter_map: ^8.3.0
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:
@@ -64,8 +73,12 @@ flutter:
   assets:
     - assets/images/
     - assets/images/cards/
-    - assets/images/map/
     - assets/images/player/
+    - assets/images/stages/stage1/
+    - assets/images/stages/stage2/
+    - assets/images/stages/stage3/
+    - assets/images/stages/stage4/
+    - assets/images/stages/stage5/
     - assets/images/ui/
     - assets/tiles/
 

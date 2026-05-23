@@ -1,9 +1,10 @@
 import 'package:flame/components.dart';
-import 'package:flame/sprite.dart';
+import 'package:flutter/foundation.dart';
+import 'pirpg_game.dart';
 
 enum PlayerState { idle, walk }
 
-class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef {
+class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameReference<PIRPGGame> {
   late final SpriteAnimation _idleAnimation;
   late final SpriteAnimation _walkAnimation;
   
@@ -14,7 +15,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
   Player({
     super.position,
     super.anchor = Anchor.center,
-  }) : super(size: Vector2.all(32));
+  }) : super(size: Vector2.all(64)); // Aumentado de 32 para 64
 
   @override
   Future<void> onLoad() async {
@@ -26,19 +27,17 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
   Future<void> _loadAnimations() async {
     // Assuming 6 frames for these soldier animations (standard for many asset packs)
     // If it's different, we can adjust later.
-    final idleImage = await gameRef.images.load('player/Soldier_Idle.png');
-    final walkImage = await gameRef.images.load('player/Soldier_Walk.png');
-
-    // Trying to detect frame count based on image width if possible, 
-    // but Flame's images.load doesn't expose width easily here without more steps.
-    // We'll stick to a common default or 6 frames.
+    debugPrint("Player: Loading animations...");
+    final idleImage = await game.images.load('player/Soldier_Idle.png');
+    final walkImage = await game.images.load('player/Soldier_Walk.png');
+    debugPrint("Player: Animations loaded successfully.");
     
     _idleAnimation = SpriteAnimation.fromFrameData(
       idleImage,
       SpriteAnimationData.sequenced(
         amount: 6,
         stepTime: 0.1,
-        textureSize: Vector2.all(100),
+        textureSize: Vector2(idleImage.width / 6, idleImage.height.toDouble()),
       ),
     );
 
@@ -47,7 +46,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
       SpriteAnimationData.sequenced(
         amount: 6,
         stepTime: 0.1,
-        textureSize: Vector2.all(100),
+        textureSize: Vector2(walkImage.width / 6, walkImage.height.toDouble()),
       ),
     );
 
