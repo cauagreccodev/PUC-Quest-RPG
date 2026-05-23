@@ -268,6 +268,17 @@ class _GameScreenState extends State<GameScreen> {
                                   );
                                 },
                               ),
+                              ListTile(
+                                leading: const Icon(Icons.looks_5, color: Colors.white),
+                                title: const Text('Estágio 5', style: TextStyle(color: Colors.white)),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 5)),
+                                  );
+                                },
+                              ),
                             ],
                           ),
                         ),
