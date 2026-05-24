@@ -7,7 +7,7 @@ import 'game/pirpg_game.dart';
 import 'models/player_state_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'screens/login_screen.dart'; // Tela atual com AuthWrapper e Google/Facebook
+import 'ui/login_screen.dart'; // Tela atual com AuthWrapper e Google/Facebook
 import 'ui/profile_overlay.dart';
 import 'ui/pause_overlay.dart';
 import 'ui/battle_screen.dart'; // Import da tela de batalha
@@ -217,7 +217,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final geoService = Provider.of<GeolocationService>(context);
     final playerState = Provider.of<PlayerStateModel>(context);
     final authService = Provider.of<AuthService>(context);
-    final playerName = authService.currentUser?.name ?? 'Aventureiro';
+    final playerName = authService.currentUser?.displayName ?? 'Aventureiro';
 
     final locationName = geoService.isInsideCampus() ? 'REINO DA PUC' : 'TERRAS SELVAGENS';
     final locationColor = geoService.isInsideCampus() ? MedievalColors.emeraldLight : MedievalColors.crimsonLight;
@@ -302,111 +302,174 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           ),
           GameWidget(game: _game),
 
-          // HUD - Top Left
           Positioned(
             top: 40,
             left: 16,
-            child: _MedievalBadge(
-              icon: Icons.map_rounded,
-              label: locationName,
-              color: locationColor,
-            ),
-          ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Positioned(
+                  top: 40,
+                  left: 16,
+                  child: _MedievalBadge(
+                    icon: Icons.map_rounded,
+                    label: locationName,
+                    color: locationColor,
+                  ),
+                ),
 
-          // HUD - Top Center
-          Positioned(
-            top: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _TavernButton(onTap: _openPause),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: Colors.black87,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: const BorderSide(color: Colors.amber, width: 2),
-                          ),
-                          title: const Text('Escolher Estágio', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.looks_one, color: Colors.white),
-                                title: const Text('Estágio 1', style: TextStyle(color: Colors.white)),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 1)),
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.looks_two, color: Colors.white),
-                                title: const Text('Estágio 2', style: TextStyle(color: Colors.white)),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 2)),
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.looks_3, color: Colors.white),
-                                title: const Text('Estágio 3', style: TextStyle(color: Colors.white)),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 3)),
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.looks_4, color: Colors.white),
-                                title: const Text('Estágio 4', style: TextStyle(color: Colors.white)),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 4)),
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.looks_5, color: Colors.white),
-                                title: const Text('Estágio 5', style: TextStyle(color: Colors.white)),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const BattleScreen(phaseId: 'test_phase', estagio: 5)),
-                                  );
-                                },
-                              ),
-                            ],
+                const SizedBox(height: 12),
+      
+                ElevatedButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: Colors.amber, width: 2),
+                        ),
+                        title: const Text(
+                          'Escolher Estágio',
+                          style: TextStyle(
+                            color: Colors.amber,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[900],
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.amber, width: 2),
-                    ),
-                    child: const Text('TESTAR BATALHA', style: TextStyle(fontWeight: FontWeight.bold)),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(
+                                Icons.looks_one,
+                                color: Colors.white,
+                              ),
+                              title: const Text(
+                                'Estágio 1',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const BattleScreen(
+                                      phaseId: 'test_phase',
+                                      estagio: 1,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(
+                                Icons.looks_two,
+                                color: Colors.white,
+                              ),
+                              title: const Text(
+                                'Estágio 2',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const BattleScreen(
+                                      phaseId: 'test_phase',
+                                      estagio: 2,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(
+                                Icons.looks_3,
+                                color: Colors.white,
+                              ),
+                              title: const Text(
+                                'Estágio 3',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const BattleScreen(
+                                      phaseId: 'test_phase',
+                                      estagio: 3,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(
+                                Icons.looks_4,
+                                color: Colors.white,
+                              ),
+                              title: const Text(
+                                'Estágio 4',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const BattleScreen(
+                                      phaseId: 'test_phase',
+                                      estagio: 4,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(
+                                Icons.looks_5,
+                                color: Colors.white,
+                              ),
+                              title: const Text(
+                                'Estágio 5',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const BattleScreen(
+                                      phaseId: 'test_phase',
+                                      estagio: 5,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[900],
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.amber, width: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ), // Deixa o botão mais compacto
                   ),
-                ],
-              ),
+                  child: const Text(
+                    'TESTAR BATALHA',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -414,61 +477,31 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           Positioned(
             top: 40,
             right: 16,
-            child: _CompactProfile(
-              onTap: _openProfile,
-              hp: playerState.hp,
-              maxHp: playerState.maxHp,
-              playerName: playerName,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _TavernButton(onTap: _openPause),
+
+                    const SizedBox(width: 12),
+
+                    _ProfileBadge(
+                      onTap: _openProfile,
+                      hp: playerState.hp,
+                      maxHp: playerState.maxHp,
+                    )   
+                  ],
+                ),
+              ],
             ),
           ),
-
-          // HUD - Bottom
-          Positioned(
-            bottom: 24,
-            left: 16,
-            right: 16,
-            child: _HorizontalMapScroll(levels: geoService.levels),
-          ),
-
-          // Explore Button Overlay when near a level
-          if (currentLevel != null)
-            Positioned(
-              bottom: 100,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: playerState.isPhaseDefeated(currentLevel['id'])
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withAlpha(200),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: MedievalColors.emeraldLight, width: 2),
-                      ),
-                      child: const Text('FASE CONCLUÍDA', style: TextStyle(color: MedievalColors.parchment, fontWeight: FontWeight.bold)),
-                    )
-                  : ElevatedButton.icon(
-                      onPressed: () => _startPhaseChallenge(currentLevel!['id']),
-                      icon: const Icon(Icons.explore, color: MedievalColors.parchment),
-                      label: Text('EXPLORAR: ${currentLevel['name']}'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B4513),
-                        foregroundColor: MedievalColors.parchment,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: MedievalColors.gold, width: 2),
-                        ),
-                        elevation: 10,
-                      ),
-                    ),
-              ),
-            ),
-            
+           
           // Guide Dialog
           if (_showGuide)
             Positioned(
-              bottom: 90,
+              bottom: 24,
               left: 16,
               right: 16,
               child: DialogBox(
@@ -482,6 +515,71 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     _showGuide = false;
                   });
                 },
+              ),
+            )
+          else 
+            // HUD - Bottom
+            Positioned(
+              bottom: 24,
+              left: 16,
+              right: 16,
+              child: _HorizontalMapScroll(levels: geoService.levels),
+            ),
+
+          // Explore Button Overlay when near a level
+          if (currentLevel != null)
+            Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: playerState.isPhaseDefeated(currentLevel['id'])
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withAlpha(200),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: MedievalColors.emeraldLight,
+                            width: 2,
+                          ),
+                        ),
+                        child: const Text(
+                          'FASE CONCLUÍDA',
+                          style: TextStyle(
+                            color: MedievalColors.parchment,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: () =>
+                            _startPhaseChallenge(currentLevel!['id']),
+                        icon: const Icon(
+                          Icons.explore,
+                          color: MedievalColors.parchment,
+                        ),
+                        label: Text('EXPLORAR: ${currentLevel['name']}'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF8B4513),
+                          foregroundColor: MedievalColors.parchment,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(
+                              color: MedievalColors.gold,
+                              width: 2,
+                            ),
+                          ),
+                          elevation: 10,
+                        ),
+                      ),
               ),
             ),
 
@@ -585,40 +683,69 @@ class _TavernButton extends StatelessWidget {
   }
 }
 
-class _CompactProfile extends StatelessWidget {
+class _ProfileBadge extends StatelessWidget {
   final VoidCallback onTap;
   final int hp;
   final int maxHp;
-  final String playerName;
 
-  const _CompactProfile({required this.onTap, required this.hp, required this.maxHp, required this.playerName});
+  const _ProfileBadge({
+    required this.onTap,
+    required this.hp,
+    required this.maxHp,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final double healthPercentage = (maxHp > 0)
+        ? (hp / maxHp).clamp(0.0, 1.0)
+        : 0.0;
+    const double medalSize = 48.0;
+
     return GestureDetector(
       onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('$hp / $maxHp HP', style: const TextStyle(color: MedievalColors.crimsonLight, fontWeight: FontWeight.bold, fontSize: 14)),
-              const SizedBox(height: 2),
-              Text(playerName.toUpperCase(), style: const TextStyle(color: MedievalColors.gold, fontSize: 8, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(width: 10),
           Container(
-            width: 44,
-            height: 44,
+            width: medalSize,
+            height: medalSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: MedievalColors.gold, width: 1.5),
-              color: const Color(0xFF2A1500),
+              border: Border.all(color: MedievalColors.gold, width: 2.0),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withAlpha(150), blurRadius: 10),
+              ],
             ),
-            child: const Icon(Icons.person, color: MedievalColors.parchment, size: 24),
+          ),
 
+          SizedBox(
+            width: medalSize - 3.0,
+            height: medalSize - 3.0,
+            child: RotationTransition(
+              turns: const AlwaysStoppedAnimation(120 / 360),
+              child: CircularProgressIndicator(
+                value: healthPercentage,
+                strokeWidth: 4.0,
+                color: const Color(0xFFA11010),
+                backgroundColor: const Color(0xFF2A0808),
+              ),
+            ),
+          ),
+
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const RadialGradient(
+                colors: [Color(0xFF5A3A00), Color(0xFF2A1500)],
+              ),
+            ),
+            child: const Icon(
+              Icons.person,
+              color: MedievalColors.parchment,
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -633,32 +760,74 @@ class _HorizontalMapScroll extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      height: 55,
       decoration: BoxDecoration(
-        color: const Color(0x99000000),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: MedievalColors.gold.withAlpha(50)),
+        color: MedievalColors.woodDark.withAlpha(220),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: MedievalColors.gold, width: 2),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black54,
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
       ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: levels.length,
-        itemBuilder: (context, index) {
-          final level = levels[index];
-          final isUnlocked = level['unlocked'] as bool;
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            alignment: Alignment.center,
-            child: Text(
-              level['name'],
-              style: TextStyle(
-                color: isUnlocked ? MedievalColors.parchment : MedievalColors.textMuted.withAlpha(100),
-                fontSize: 11,
-                fontWeight: isUnlocked ? FontWeight.bold : FontWeight.normal,
+
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: levels.length,
+          itemBuilder: (context, index) {
+            final level = levels[index];
+            final isUnlocked = level['unlocked'] as bool;
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: index < levels.length - 1
+                    ? Border(
+                        right: BorderSide(
+                          color: MedievalColors.goldDark.withAlpha(100),
+                          width: 1.5,
+                        ),
+                      )
+                    : null,
               ),
-            ),
-          );
-        },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isUnlocked ? Icons.outlined_flag : Icons.lock_outline,
+                    size: 16,
+                    color: isUnlocked
+                        ? MedievalColors.emeraldLight
+                        : MedievalColors.textMuted.withAlpha(150),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  Text(
+                    level['name'].toUpperCase(),
+                    style: TextStyle(
+                      color: isUnlocked
+                          ? MedievalColors.parchment
+                          : MedievalColors.textMuted.withAlpha(150),
+                      fontSize: 11,
+                      fontWeight: isUnlocked
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

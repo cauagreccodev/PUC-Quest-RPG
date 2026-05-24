@@ -1,109 +1,128 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-class AuthUser {
-  final String email;
-  final String password;
-  final String name;
-
-  AuthUser({required this.email, required this.password, required this.name});
-
-  Map<String, dynamic> toJson() => {
-    'email': email,
-    'password': password,
-    'name': name,
-  };
-
-  factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
-    email: json['email'],
-    password: json['password'],
-    name: json['name'],
-  );
-}
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService extends ChangeNotifier {
-  AuthUser? _currentUser;
-  bool _isLoading = true;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  AuthUser? get currentUser => _currentUser;
+  bool _isLoading = false;
   bool get isLoading => _isLoading;
-  bool get isAuthenticated => _currentUser != null;
 
-  AuthService() {
-    _loadSession();
-  }
+  User? get currentUser => _auth.currentUser;
+  bool get isAuthenticated => currentUser != null;
 
-  Future<void> _loadSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('auth_user');
-    if (userJson != null) {
-      _currentUser = AuthUser.fromJson(jsonDecode(userJson));
-    }
-    _isLoading = false;
-    notifyListeners();
-  }
+  String? get currentUserId => _auth.currentUser?.uid;
 
+  // Login
   Future<bool> login(String email, String password) async {
-    final prefs = await SharedPreferences.getInstance();
-    final usersList = prefs.getStringList('registered_users') ?? [];
-
-    for (var userStr in usersList) {
-      final user = AuthUser.fromJson(jsonDecode(userStr));
-      if (user.email == email && user.password == password) {
-        _currentUser = user;
-        await prefs.setString('auth_user', jsonEncode(user.toJson()));
-        notifyListeners();
-        return true;
-      }
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      notifyListeners();
+      return true;
+    } catch(e) {
+      print('Erro ao fazer login: $e');
+      return false;
     }
-    return false;
   }
 
+  // Registro
   Future<bool> register(String email, String password, String name) async {
-    final prefs = await SharedPreferences.getInstance();
-    final usersList = prefs.getStringList('registered_users') ?? [];
+    try {
+      UserCredential credential = await _auth.createUserWithEmailAndPassword(
+        email: email, 
+        password: password
+      );
 
-    // Check if user already exists
-    for (var userStr in usersList) {
-      final user = AuthUser.fromJson(jsonDecode(userStr));
-      if (user.email == email) return false;
+      await credential.user!.updateDisplayName(name);
+
+      if (credential.user != null) {
+        await _firestore.collection('users').doc(credential.user!.uid).set({
+          'name': name,
+          'email': email,
+          'uid': credential.user!.uid,
+          'activeSaveId': '',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      notifyListeners();
+      return true;
+    } catch(e) {
+      print('Erro ao registrar: $e');
+      return false;
     }
-
-    final newUser = AuthUser(email: email, password: password, name: name);
-    usersList.add(jsonEncode(newUser.toJson()));
-    await prefs.setStringList('registered_users', usersList);
-    
-    // Auto login
-    _currentUser = newUser;
-    await prefs.setString('auth_user', jsonEncode(newUser.toJson()));
-    notifyListeners();
-    return true;
   }
 
+  // Logout
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_user');
-    _currentUser = null;
+    await _auth.signOut();
     notifyListeners();
   }
 
+  // Login Anônimo
   Future<bool> loginWithProvider(String provider) async {
     _isLoading = true;
     notifyListeners();
-    
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 2));
-    
-    final newUser = AuthUser(
-      email: '${provider.toLowerCase()}@social.com',
-      password: '',
-      name: 'Herói do $provider',
-    );
-    
-    _currentUser = newUser;
-    _isLoading = false;
+
+    try {
+      await _auth.signInAnonymously();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Erro no login de provedor: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Login com Google
+  Future<bool> signInWithGoogle() async {
+    _isLoading = true;
     notifyListeners();
-    return true;
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser == null) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        if (!doc.exists) {
+          await _firestore.collection('users').doc(user.uid).set({
+            'name': user.displayName ?? '',
+            'email': user.email ?? '',
+            'uid': user.uid,
+            'activeSaveId': '',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Erro no login com Google: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }
