@@ -48,6 +48,7 @@ dependencies:
   flutter_map: ^8.3.0
   latlong2: ^0.9.1
   awesome_snackbar_content: ^0.1.8
+  audioplayers: ^6.6.0
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +73,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/audio/
     - assets/images/
     - assets/images/cards/
     - assets/images/player/

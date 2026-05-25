@@ -14,6 +14,7 @@ import 'ui/battle_screen.dart'; // Import da tela de batalha
 import 'ui/guide_dialog.dart'; // Import do guide dialog
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:geolocator/geolocator.dart';
 
 Future<void> main() async {
@@ -23,6 +24,9 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Iniciar música de fundo
+  tocarMusica();
   
   runApp(
     MultiProvider(
@@ -34,6 +38,16 @@ Future<void> main() async {
 
       child: const MyApp(),
     ),
+  );
+}
+
+final player = AudioPlayer();
+
+Future<void> tocarMusica() async {
+  await player.setReleaseMode(ReleaseMode.loop);
+
+  await player.play(
+    AssetSource('audio/sound.mp3'),
   );
 }
 
