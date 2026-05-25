@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
 
@@ -16,20 +17,54 @@ class GeolocationService extends ChangeNotifier {
   // Example Level Locations (Fases)
   final List<Map<String, dynamic>> levels = [
     {
-      'id': 'fase_ceatec',
-      'name': 'CEATEC',
-      'lat': -22.8335,
-      'lon': -47.0520,
-      'radius': 50,
+      'id': 'estagio_1',
+      'name': 'Praça de Alimentação',
+      'lat': -22.83220,
+      'lon': -47.05100,
+      'radius': 40,
       'unlocked': false,
+      'icon': Icons.restaurant,
+      'estagio': 1,
     },
     {
-      'id': 'fase_cea',
-      'name': 'CEA',
-      'lat': -22.8315,
-      'lon': -47.0505,
-      'radius': 50,
+      'id': 'estagio_2',
+      'name': 'Biblioteca (Redes)',
+      'lat': -22.83280,
+      'lon': -47.05150,
+      'radius': 40,
       'unlocked': false,
+      'icon': Icons.menu_book,
+      'estagio': 2,
+    },
+    {
+      'id': 'estagio_3',
+      'name': 'H14 (A02)',
+      'lat': -22.83350,
+      'lon': -47.05210,
+      'radius': 40,
+      'unlocked': false,
+      'icon': Icons.calculate,
+      'estagio': 3,
+    },
+    {
+      'id': 'estagio_4',
+      'name': 'Entrada do H15',
+      'lat': -22.83390,
+      'lon': -47.05240,
+      'radius': 40,
+      'unlocked': false,
+      'icon': Icons.meeting_room,
+      'estagio': 4,
+    },
+    {
+      'id': 'estagio_5',
+      'name': 'H15 (Jogos Digitais)',
+      'lat': -22.83430,
+      'lon': -47.05260,
+      'radius': 40,
+      'unlocked': false,
+      'icon': Icons.sports_esports,
+      'estagio': 5,
     },
   ];
 
@@ -89,6 +124,29 @@ class GeolocationService extends ChangeNotifier {
       }
       notifyListeners();
     });
+  }
+
+  void setFakeLocation(double lat, double lon) {
+    _currentPosition = Position.fromMap({
+      'latitude': lat,
+      'longitude': lon,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'accuracy': 10.0,
+      'altitude': 0.0,
+      'heading': 0.0,
+      'speed': 0.0,
+      'speed_accuracy': 0.0,
+      'altitude_accuracy': 0.0,
+      'heading_accuracy': 0.0,
+    });
+    
+    // Check for level unlocks
+    for (var level in levels) {
+      if (isNearLevel(level)) {
+        level['unlocked'] = true;
+      }
+    }
+    notifyListeners();
   }
 
   @override

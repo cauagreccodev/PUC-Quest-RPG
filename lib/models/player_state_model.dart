@@ -38,6 +38,14 @@ class PlayerStateModel extends ChangeNotifier {
   List<GameItem> _inventory;
   List<String> _defeatedPhases;
 
+  static const Map<int, Map<String, String>> keyData = {
+    1: {'id': 'key_1', 'name': 'Chave do Calouro', 'description': 'Acesso à Praça de Alimentação', 'icon': '🔑'},
+    2: {'id': 'key_2', 'name': 'Chave do Conhecimento', 'description': 'Acesso à Biblioteca (Redes)', 'icon': '🗝️'},
+    3: {'id': 'key_3', 'name': 'Chave da Lógica', 'description': 'Acesso ao H14 (A02)', 'icon': '🔐'},
+    4: {'id': 'key_4', 'name': 'Chave do Portal', 'description': 'Acesso à Entrada do H15', 'icon': '🗝️'},
+    5: {'id': 'key_5', 'name': 'Chave do Diploma', 'description': 'Acesso ao H15 (Jogos Digitais)', 'icon': '🎓'},
+  };
+
   PlayerStateModel({
     int hp = 100,
     int maxHp = 100,
@@ -48,7 +56,42 @@ class PlayerStateModel extends ChangeNotifier {
         _maxHp = maxHp,
         _currentPhase = currentPhase,
         _inventory = inventory ?? [],
-        _defeatedPhases = defeatedPhases ?? [];
+        _defeatedPhases = defeatedPhases ?? [] {
+    grantInitialKeyIfNeeded();
+  }
+
+  bool hasKeyForEstagio(int estagio) {
+    if (estagio < 1 || estagio > 5) return true; // Se for fora de 1-5, não bloqueia por chave
+    final keyId = keyData[estagio]!['id'];
+    return _inventory.any((item) => item.id == keyId);
+  }
+
+  void grantNextKey(int currentEstagio) {
+    int nextEstagio = currentEstagio + 1;
+    if (nextEstagio <= 5) {
+      final keyInfo = keyData[nextEstagio]!;
+      if (!hasKeyForEstagio(nextEstagio)) {
+        addItem(GameItem(
+          id: keyInfo['id']!,
+          name: keyInfo['name']!,
+          description: keyInfo['description']!,
+          icon: keyInfo['icon']!,
+        ));
+      }
+    }
+  }
+
+  void grantInitialKeyIfNeeded() {
+    if (!hasKeyForEstagio(1)) {
+      final keyInfo = keyData[1]!;
+      _inventory.add(GameItem(
+        id: keyInfo['id']!,
+        name: keyInfo['name']!,
+        description: keyInfo['description']!,
+        icon: keyInfo['icon']!,
+      ));
+    }
+  }
 
   int get hp => _hp;
   int get maxHp => _maxHp;
@@ -174,8 +217,12 @@ class PlayerStateModel extends ChangeNotifier {
           .toList();
       _defeatedPhases = prefs.getStringList('defeatedPhases') ?? [];
     }
+    
+    grantInitialKeyIfNeeded(); // Garante que terá a chave 1 se não tiver nenhuma
 
-    notifyListeners();
+    Future.delayed(Duration.zero, () {
+      notifyListeners();
+    });
   }
 }
 

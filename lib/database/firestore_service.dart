@@ -65,6 +65,11 @@ class FirestoreService {
       final items = [
         {'id': 'item_cura', 'name': 'Código de Cura', 'description': 'Restaura 2 pontos de vida (+2 ❤️)', 'type': 'healing', 'value': 2},
         {'id': 'item_dica', 'name': 'Carta Dica', 'description': 'Auxílio na resolução de bugs ou desafios lógicos.', 'type': 'support', 'value': 1},
+        {'id': 'key_1', 'name': 'Chave do Calouro', 'description': 'Acesso à Praça de Alimentação', 'type': 'key', 'icon': '🔑'},
+        {'id': 'key_2', 'name': 'Chave do Conhecimento', 'description': 'Acesso à Biblioteca (Redes)', 'type': 'key', 'icon': '🗝️'},
+        {'id': 'key_3', 'name': 'Chave da Lógica', 'description': 'Acesso ao H14 (A02)', 'type': 'key', 'icon': '🔐'},
+        {'id': 'key_4', 'name': 'Chave do Portal', 'description': 'Acesso à Entrada do H15', 'type': 'key', 'icon': '🗝️'},
+        {'id': 'key_5', 'name': 'Chave do Diploma', 'description': 'Acesso ao H15 (Jogos Digitais)', 'type': 'key', 'icon': '🎓'},
       ];
       for (var item in items) {
         await _db.collection(_itemsCollection).doc(item['id'].toString()).set(item);
@@ -115,7 +120,7 @@ class FirestoreService {
       'xp': 0,
       'hp': 100,
       'maxHp': 100,
-      'inventory': ['Carta Dica'], // Itens iniciais
+      'inventory': ['Carta Dica'], // Mantido para compatibilidade, o PlayerStateModel lidará com as chaves
       'unlocked_zones': ['CEATEC'], // Área inicial liberada
       'last_location': {'lat': 0.0, 'lon': 0.0},
       'updatedAt': FieldValue.serverTimestamp(),

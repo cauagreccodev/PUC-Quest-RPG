@@ -181,8 +181,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _startPhaseChallenge(String phaseId) async {
+  void _startPhaseChallenge(String phaseId, int estagio) async {
     final playerState = Provider.of<PlayerStateModel>(context, listen: false);
+    
+    if (!playerState.hasKeyForEstagio(estagio)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('A aura deste local é muito forte. Adquira mais experiência e conclua o estágio anterior para avançar!'),
+        backgroundColor: Colors.red[900],
+      ));
+      return;
+    }
+
     if (playerState.isPhaseDefeated(phaseId)) {
        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('A ameaça desta região já foi eliminada!')));
        return;
@@ -191,7 +200,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BattleScreen(phaseId: phaseId),
+        builder: (context) => BattleScreen(phaseId: phaseId, estagio: estagio),
       ),
     );
 
@@ -205,7 +214,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         description: 'Recupera 75 HP instantaneamente.',
         icon: '❤️',
       ));
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Boss Derrotado! Você recebeu uma Carta de Regeneração!')));
+      
+      // Concede a próxima chave
+      pState.grantNextKey(estagio);
+      
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Boss Derrotado! Você recebeu recompensas e talvez uma nova chave!')));
     } else if (result == false) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Você fugiu ou foi derrotado... Tente novamente!')));
@@ -266,7 +279,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
               MarkerLayer(
                 markers: geoService.levels.map((level) {
-                  final isUnlocked = level['unlocked'] as bool;
+                  final isUnlocked = (level['unlocked'] as bool) && 
+                                     playerState.hasKeyForEstagio(level['estagio']);
                   return Marker(
                     point: LatLng(level['lat'], level['lon']),
                     width: 80,
@@ -308,14 +322,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Positioned(
-                  top: 40,
-                  left: 16,
-                  child: _MedievalBadge(
-                    icon: Icons.map_rounded,
-                    label: locationName,
-                    color: locationColor,
-                  ),
+                _MedievalBadge(
+                  icon: Icons.map_rounded,
+                  label: locationName,
+                  color: locationColor,
                 ),
 
                 const SizedBox(height: 12),
@@ -469,6 +479,73 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
+
+                const SizedBox(height: 12),
+
+                ElevatedButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: Colors.blueAccent, width: 2),
+                        ),
+                        title: const Text(
+                          'Fake GPS - Teleporte',
+                          style: TextStyle(
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        content: SizedBox(
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: geoService.levels.length,
+                            itemBuilder: (context, index) {
+                              final level = geoService.levels[index];
+                              return ListTile(
+                                leading: Icon(
+                                  level['icon'] as IconData? ?? Icons.location_on,
+                                  color: Colors.white,
+                                ),
+                                title: Text(
+                                  level['name'],
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  geoService.setFakeLocation(level['lat'], level['lon']);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Teleportado para ${level['name']}!'),
+                                      backgroundColor: Colors.blue[900],
+                                    )
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[900],
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.blueAccent, width: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  child: const Text(
+                    'FAKE GPS',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
               ],
             ),
           ),
@@ -523,7 +600,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               bottom: 24,
               left: 16,
               right: 16,
-              child: _HorizontalMapScroll(levels: geoService.levels),
+              child: _HorizontalMapScroll(levels: geoService.levels, playerState: playerState),
             ),
 
           // Explore Button Overlay when near a level
@@ -533,53 +610,37 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               left: 0,
               right: 0,
               child: Center(
-                child: playerState.isPhaseDefeated(currentLevel['id'])
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withAlpha(200),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: MedievalColors.emeraldLight,
-                            width: 2,
-                          ),
-                        ),
-                        child: const Text(
-                          'FASE CONCLUÍDA',
-                          style: TextStyle(
-                            color: MedievalColors.parchment,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      )
-                    : ElevatedButton.icon(
-                        onPressed: () =>
-                            _startPhaseChallenge(currentLevel!['id']),
-                        icon: const Icon(
-                          Icons.explore,
-                          color: MedievalColors.parchment,
-                        ),
-                        label: Text('EXPLORAR: ${currentLevel['name']}'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B4513),
-                          foregroundColor: MedievalColors.parchment,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: const BorderSide(
-                              color: MedievalColors.gold,
-                              width: 2,
-                            ),
-                          ),
-                          elevation: 10,
-                        ),
+                child: ElevatedButton.icon(
+                  onPressed: () =>
+                      _startPhaseChallenge(currentLevel!['id'], currentLevel['estagio']),
+                  icon: const Icon(
+                    Icons.explore,
+                    color: MedievalColors.parchment,
+                  ),
+                  label: Text(playerState.isPhaseDefeated(currentLevel['id']) 
+                      ? 'REJOGAR: ${currentLevel['name']}' 
+                      : 'EXPLORAR: ${currentLevel['name']}'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: playerState.isPhaseDefeated(currentLevel['id']) 
+                        ? Colors.green.withAlpha(180) 
+                        : const Color(0xFF8B4513),
+                    foregroundColor: MedievalColors.parchment,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: playerState.isPhaseDefeated(currentLevel['id']) 
+                            ? MedievalColors.emeraldLight 
+                            : MedievalColors.gold,
+                        width: 2,
                       ),
+                    ),
+                    elevation: 10,
+                  ),
+                ),
               ),
             ),
 
@@ -755,7 +816,8 @@ class _ProfileBadge extends StatelessWidget {
 
 class _HorizontalMapScroll extends StatelessWidget {
   final List<dynamic> levels;
-  const _HorizontalMapScroll({required this.levels});
+  final PlayerStateModel playerState;
+  const _HorizontalMapScroll({required this.levels, required this.playerState});
 
   @override
   Widget build(BuildContext context) {
@@ -782,7 +844,8 @@ class _HorizontalMapScroll extends StatelessWidget {
           itemCount: levels.length,
           itemBuilder: (context, index) {
             final level = levels[index];
-            final isUnlocked = level['unlocked'] as bool;
+            final isUnlocked = (level['unlocked'] as bool) && 
+                               playerState.hasKeyForEstagio(level['estagio']);
 
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 20),
