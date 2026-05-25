@@ -1,0 +1,58 @@
+# Documento de Design de Jogo (GDD): PIRPG
+
+**PIRPG** é um RPG inovador que utiliza geolocalização em tempo real para transformar o Campus I da PUC-Campinas em um mundo virtual explorável.
+
+---
+
+## 🌍 Core Mechanic: Geolocalização
+O jogo mapeia as coordenadas GPS do usuário diretamente para o movimento do personagem no mapa do jogo.
+- **Movimentação:** Sincronizada com o deslocamento real do jogador pelo campus.
+- **Geofencing:** Áreas específicas dos centros acadêmicos ativam eventos, missões ou desbloqueiam conteúdos.
+
+---
+
+## 📜 Mapa do Campus I (PUC-Campinas)
+O mapa detalha o layout do campus, codificando os centros por cores para facilitar a navegação e identificação acadêmica:
+
+- **CEATEC (Laranja 🟠):** Ciências Exatas, Ambientais e Tecnologias (Engenharias, Computação, Matemática).
+- **CEA (Vermelho 🔴):** Economia e Administração (Administração, Economia, Relações Internacionais).
+- **CLC (Azul 🔵):** Linguagem e Comunicação (Artes, Design, Jornalismo, Letras).
+- **CCHSA (Amarelo 🟡):** Ciências Humanas e Sociais Aplicadas (Direito, Filosofia, História, Pedagogia).
+
+---
+
+## 🃏 Cartas de Jogo e Itens
+Elementos estratégicos para auxiliar o progresso do jogador:
+
+1. **Carta Dica 🟢**
+   - **Ícone:** Pergaminho com besouro e pena.
+   - **Efeito:** Fornece uma dica de depuração/estratégia para superar desafios de programação ou puzzles na fase.
+2. **Código de Cura 🔴 (+2 Vidas)**
+   - **Ícone:** Coração brilhante com identificador 'C'.
+   - **Efeito:** Recupera ou adiciona 2 corações extras à vida do jogador.
+
+---
+
+## 🎮 Interface e Funcionalidades (UI/UX)
+- **Mini-mapa:** Localizado no canto superior para orientação rápida em tempo real.
+- **Janela de Perfil:** Acessada ao clicar no avatar do jogador, exibindo atributos e progresso.
+- **Save Points 💊:** Áreas específicas que permitem salvar o progresso. 
+   - *Restrição:* Não é possível salvar durante missões ativas (MISS).
+- **Menu de Opções:** Controle de volume, qualidade gráfica e ajustes de tela.
+
+---
+
+## 🛠️ Stack Tecnológica
+- **Framework:** Flutter
+- **Engine de Jogo:** Flame
+- **Mapas:** Tiled (TMX / TSX)
+- **Serviços:** Geolocalização via GPS (High Accuracy)
+
+---
+
+## 👥 Equipe de Desenvolvimento
+- **Leandro Nascimento Lucatelli (25007808):** Design de Mapa, Assets (Skins, Traps, Inimigos), Design Geral.
+- **Cauã Vasconcelos Grecco de Faria (25006367):** Desenvolvimento Frontend.
+- **Rodrigo de Faria Perico (22004955):** Desenvolvimento Backend/Lógica.
+- **Gustavo Antunes (25013281):** Desenvolvimento/Suporte.
+- **Pedro Henrique Vieira Lima (25018202):** Desenvolvimento/Suporte.

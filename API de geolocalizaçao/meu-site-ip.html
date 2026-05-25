@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testador de API com Mapa Interativo</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .cartao {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px; /* Aumentei um pouco a largura para o mapa ficar melhor */
+        }
+        h2 { margin-top: 0; color: #333; text-align: center; }
+        input {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            border: 1px solid #ccc; border-radius: 5px;
+            box-sizing: border-box; font-size: 16px;
+        }
+        button {
+            width: 100%; padding: 12px; background-color: #007bff;
+            color: white; border: none; border-radius: 5px;
+            font-size: 16px; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { background-color: #0056b3; }
+        
+        .resultado { margin-top: 20px; display: none; }
+        .dados-texto { padding: 15px; background-color: #e9ecef; border-radius: 5px; margin-bottom: 15px; }
+        p { margin: 8px 0; color: #555; }
+        strong { color: #222; }
+        
+        /* Mapa um pouco mais alto para facilitar a navegação */
+        #mapa { height: 400px; width: 100%; border-radius: 5px; z-index: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="cartao">
+        <h2>Rastreador de IP Avançado</h2>
+        <p style="text-align: center; font-size: 14px;">Digite um IP ou aperte Enter para ver o seu</p>
+        
+        <input type="text" id="campoIp" placeholder="Ex: 24.48.0.1" value="24.48.0.1">
+        <button id="botaoBuscar" onclick="buscarLocalizacao()">Buscar Localização</button>
+
+        <div id="caixaResultado" class="resultado">
+            <div class="dados-texto">
+                <p><strong>Cidade/Região:</strong> <span id="local"></span></p>
+                <p><strong>Provedor:</strong> <span id="provedor"></span></p>
+            </div>
+            
+            <p style="font-size: 12px; text-align: center; color: #666;">
+                <i>Dica: Arraste o mapa para navegar e clique em qualquer lugar para ver as coordenadas.</i>
+            </p>
+            <div id="mapa"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        let meuMapa = null;
+        let marcador = null;
+        
+        // Novo recurso: Fazer a busca ao apertar "Enter"
+        document.getElementById('campoIp').addEventListener('keypress', function (evento) {
+            if (evento.key === 'Enter') {
+                buscarLocalizacao();
+            }
+        });
+
+        function buscarLocalizacao() {
+            const ipDigitado = document.getElementById('campoIp').value;
+            const url = ipDigitado ? `http://ip-api.com/json/${ipDigitado}` : `http://ip-api.com/json/`;
+            const botao = document.getElementById('botaoBuscar');
+            
+            botao.innerText = "Buscando...";
+
+            fetch(url)
+                .then(resposta => resposta.json())
+                .then(dados => {
+                    botao.innerText = "Buscar Localização";
+
+                    if (dados.status === "fail") {
+                        alert("Erro: Não foi possível localizar este IP.");
+                        return;
+                    }
+
+                    document.getElementById('local').innerText = `${dados.city}, ${dados.regionName} - ${dados.country}`;
+                    document.getElementById('provedor').innerText = dados.isp;
+                    document.getElementById('caixaResultado').style.display = 'block';
+
+                    const lat = dados.lat;
+                    const lon = dados.lon;
+
+                    // Criação ou atualização do mapa
+                    if (meuMapa === null) {
+                        meuMapa = L.map('mapa').setView([lat, lon], 12); // Zoom ajustado para 12 (um pouco mais longe)
+                        
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap'
+                        }).addTo(meuMapa);
+
+                        // NOVO RECURSO: Evento de clique no mapa
+                        meuMapa.on('click', function(eventoClique) {
+                            // Pega a latitude e longitude do ponto clicado
+                            let latClicada = eventoClique.latlng.lat.toFixed(5);
+                            let lonClicada = eventoClique.latlng.lng.toFixed(5);
+
+                            // Cria um pop-up temporário onde o usuário clicou
+                            L.popup()
+                                .setLatLng(eventoClique.latlng)
+                                .setContent(`
+                                    <b>Nova Localização:</b><br>
+                                    Lat: ${latClicada}<br>
+                                    Lon: ${lonClicada}
+                                `)
+                                .openOn(meuMapa);
+                        });
+
+                    } else {
+                        meuMapa.setView([lat, lon], 12);
+                    }
+
+                    if (marcador !== null) {
+                        meuMapa.removeLayer(marcador);
+                    }
+
+                    // Pino principal do IP buscado
+                    marcador = L.marker([lat, lon]).addTo(meuMapa);
+                    marcador.bindPopup(`
+                        <b>Localização do IP:</b><br>
+                        Latitude: ${lat}<br>
+                        Longitude: ${lon}
+                    `).openPopup();
+
+                })
+                .catch(erro => {
+                    botao.innerText = "Buscar Localização";
+                    alert("Erro de conexão. Verifique sua internet.");
+                    console.error(erro);
+                });
+        }
+    </script>
+</body>
+</html>
