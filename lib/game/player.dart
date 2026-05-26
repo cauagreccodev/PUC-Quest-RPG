@@ -15,7 +15,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRefe
   Player({
     super.position,
     super.anchor = Anchor.center,
-  }) : super(size: Vector2.all(64)); // Aumentado de 32 para 64
+  }) : super(size: Vector2.all(64));
 
   @override
   Future<void> onLoad() async {
@@ -44,9 +44,9 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRefe
     _walkAnimation = SpriteAnimation.fromFrameData(
       walkImage,
       SpriteAnimationData.sequenced(
-        amount: 6,
+        amount: 8,
         stepTime: 0.1,
-        textureSize: Vector2(walkImage.width / 6, walkImage.height.toDouble()),
+        textureSize: Vector2(walkImage.width / 8, walkImage.height.toDouble()),
       ),
     );
 
@@ -65,10 +65,10 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRefe
       current = PlayerState.walk;
       
       // Flip sprite based on direction
-      if (velocity.x < 0 && !isFlipped) {
+      if (velocity.x > 0 && !isFlipped) {
         flipHorizontallyAroundCenter();
         isFlipped = true;
-      } else if (velocity.x > 0 && isFlipped) {
+      } else if (velocity.x < 0 && isFlipped) {
         flipHorizontallyAroundCenter();
         isFlipped = false;
       }

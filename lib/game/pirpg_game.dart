@@ -1,10 +1,13 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import '../services/geolocation_service.dart';
 import '../models/player_state_model.dart';
 import '../services/auth_service.dart';
 
 import 'player.dart';
+
+import 'dart:math' as math;
 
 class PIRPGGame extends FlameGame {
   final GeolocationService geoService;
@@ -52,7 +55,7 @@ class PIRPGGame extends FlameGame {
         // Se houver uma mudança significativa de posição, inicia a animação de caminhada
         if (lonDiff.abs() > 0.000005 || latDiff.abs() > 0.000005) {
             player.velocity = Vector2(lonDiff, latDiff).normalized() * 50;
-            _velocityDecay = 1.5; // Anima por 1.5 segundos na direção
+            _velocityDecay = 1.0; // Sincronizado com os 1000ms do main.dart
         }
       }
       

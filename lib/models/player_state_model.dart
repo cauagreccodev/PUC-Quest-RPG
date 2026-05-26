@@ -108,8 +108,10 @@ class PlayerStateModel extends ChangeNotifier {
   }
 
   void setPhase(String phase) {
-    _currentPhase = phase;
-    notifyListeners();
+    if (_currentPhase != phase) {
+      _currentPhase = phase;
+      notifyListeners();
+    }
   }
 
   void takeDamage(int amount) {

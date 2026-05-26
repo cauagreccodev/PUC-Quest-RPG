@@ -99,14 +99,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _initialized = false;
   bool _showGuide = true;
 
-  double? _lastAnimatedLat;
-  double? _lastAnimatedLon;
+  double? _lastMovedLat;
+  double? _lastMovedLon;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
   }
+  AnimationController? _mapAnimationController;
 
   void _animatedMapMove(LatLng destLocation, double destZoom) {
     try {
@@ -120,12 +121,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final zoomTween = Tween<double>(
           begin: camera.zoom, end: destZoom);
 
-      final controller = AnimationController(
-          duration: const Duration(milliseconds: 800), vsync: this);
-      final animation = CurvedAnimation(
-          parent: controller, curve: Curves.fastOutSlowIn);
+      _mapAnimationController?.dispose();
 
-      controller.addListener(() {
+      _mapAnimationController = AnimationController(
+          duration: const Duration(milliseconds: 1000), vsync: this);
+      
+      final animation = CurvedAnimation(
+          parent: _mapAnimationController!, curve: Curves.linear);
+
+      _mapAnimationController!.addListener(() {
         try {
           _mapController.move(
               LatLng(latTween.evaluate(animation), lngTween.evaluate(animation)),
@@ -133,13 +137,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         } catch (_) {}
       });
 
-      animation.addStatusListener((status) {
-        if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
-          controller.dispose();
-        }
-      });
-
-      controller.forward();
+      _mapAnimationController!.forward();
     } catch (_) {
       try {
         _mapController.move(destLocation, destZoom);
@@ -262,9 +260,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (geoService.currentPosition != null) {
       final curLat = geoService.currentPosition!.latitude;
       final curLon = geoService.currentPosition!.longitude;
-      if (_lastAnimatedLat != curLat || _lastAnimatedLon != curLon) {
-        _lastAnimatedLat = curLat;
-        _lastAnimatedLon = curLon;
+      if (_lastMovedLat != curLat || _lastMovedLon != curLon) {
+        _lastMovedLat = curLat;
+        _lastMovedLon = curLon;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _animatedMapMove(LatLng(curLat, curLon), 18.0);
         });
