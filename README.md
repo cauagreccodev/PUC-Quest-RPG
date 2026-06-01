@@ -9,7 +9,7 @@
 
 - **Exploração via GPS:** O personagem se move conforme você caminha pelo campus real.
 - **Geofencing Dinâmico:** Áreas como CEATEC, CEA e CLC possuem interações exclusivas baseadas em sua localização.
-- **Sistema de Itens:** Uso de Cartas de Dica e Códigos de Cura para auxiliar na progressão.
+- **Sistema de Itens:** Uso de Cartas de Dica e Códigos de cura para auxiliar na progressão.
 - **Interface Intuitiva:** Mini-mapa em tempo real, tela de perfil de jogador e pontos de salvamento estratégicos.
 - **Fidelidade de Mapa:** Mapas renderizados via TMX (Tiled) com precisão de escala entre coordenadas geográficas e pixels de jogo.
 
