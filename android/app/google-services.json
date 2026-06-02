@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "106292251398",
+    "project_id": "pi-projeto-e15f1",
+    "storage_bucket": "pi-projeto-e15f1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:106292251398:android:8676b8443ae375174e6c87",
+        "android_client_info": {
+          "package_name": "com.example.pirpg"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "106292251398-10agvoksiibamh0v8brqmrm8c214o531.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pirpg",
+            "certificate_hash": "fea1a380fb19d7f0d75b5e80fbc0a43091eac765"
+          }
+        },
+        {
+          "client_id": "106292251398-oe06bgf1igv8hh6t31eiq70e67ergasl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pirpg",
+            "certificate_hash": "598f88368278ef94a488db73e56f9a254a739bb6"
+          }
+        },
+        {
+          "client_id": "106292251398-s8dl9m4o5jvppd0669m8r6tu4qrpm3j6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEu0FTSgoSnIx0_RvhSC4dIOyg70_2yfU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "106292251398-s8dl9m4o5jvppd0669m8r6tu4qrpm3j6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "106292251398-iaclk2mnd9fcm97oqkv2j2i4ilshmoj1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.pirpg"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
