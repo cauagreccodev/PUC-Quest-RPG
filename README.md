@@ -1,4 +1,4 @@
-# PIRPG - Mobile Geolocation RPG 🌍🎮
+# PUC Quest RPG - Mobile Geolocation RPG 🌍🎮
 
 🎉 **RELEASE 1.0 JÁ ESTÁ DISPONÍVEL!** 🎉
 > O jogo chegou à sua aguardada versão 1.0! Todos os sistemas de batalha, gráficos e geolocalização foram finalizados e balanceados para a melhor experiência possível. Jogue agora mesmo baixando o APK!
