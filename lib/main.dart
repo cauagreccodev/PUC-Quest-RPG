@@ -310,6 +310,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (geoService.currentPosition != null) {
       final curLat = geoService.currentPosition!.latitude;
       final curLon = geoService.currentPosition!.longitude;
+
+      for (var level in geoService.levels) {
+        if (geoService.isNearLevel(level)) {
+          currentLevel = level;
+          break;
+        }
+      }
+
       if (_lastMovedLat != curLat || _lastMovedLon != curLon) {
         _lastMovedLat = curLat;
         _lastMovedLon = curLon;
