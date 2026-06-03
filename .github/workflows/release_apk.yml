@@ -34,10 +34,10 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: build/app/outputs/flutter-apk/app-release.apk
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
+          name: ${{ github.ref_type == 'tag' && format('Release {0}', github.ref_name) || 'Latest Build' }}
           draft: false
           prerelease: false
           generate_release_notes: true
