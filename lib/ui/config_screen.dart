@@ -131,7 +131,7 @@ class ConfigScreen extends StatelessWidget {
                     final success = await authService.linkWithGoogle();
                     if (success && context.mounted) {
                       final pState = Provider.of<PlayerStateModel>(context, listen: false);
-                      await pState.saveGame(uid: authService.currentUserId);
+                      await pState.saveGame(uid: authService.currentUser?.isAnonymous == true ? null : authService.currentUserId);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Conta do Google vinculada com sucesso!')),
                       );
@@ -167,6 +167,11 @@ class ConfigScreen extends StatelessWidget {
                   borderColor: const Color(0xFF8B1A1A),
                   onPressed: () async {
                     audioSettings.playButtonSound();
+                    // Salva antes de sair da conta
+                    if (context.mounted) {
+                      final pState = Provider.of<PlayerStateModel>(context, listen: false);
+                      await pState.saveGame(uid: authService.currentUser?.isAnonymous == true ? null : authService.currentUserId);
+                    }
                     await authService.logout();
                     if (!context.mounted) return;
                     Navigator.of(context).popUntil((route) => route.isFirst);
@@ -347,7 +352,7 @@ class ConfigScreen extends StatelessWidget {
                 final success = await authService.linkWithEmailPassword(email, password, name);
                 if (success && context.mounted) {
                   final pState = Provider.of<PlayerStateModel>(context, listen: false);
-                  await pState.saveGame(uid: authService.currentUserId);
+                  await pState.saveGame(uid: authService.currentUser?.isAnonymous == true ? null : authService.currentUserId);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Conta registrada com sucesso!')),
                   );

@@ -174,8 +174,12 @@ class _PauseOverlayState extends State<PauseOverlay>
                                 end: Alignment.bottomRight,
                               ),
                               borderColor: MedievalColors.crimsonLight,
-                              onTap: () {
+                              onTap: () async {
                                 _playClick(context);
+                                // Salva antes de fechar o app
+                                if (mounted) {
+                                  await Provider.of<PlayerStateModel>(context, listen: false).saveGame();
+                                }
                                 SystemNavigator.pop();
                               },
                             ),

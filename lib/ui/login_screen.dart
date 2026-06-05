@@ -137,37 +137,21 @@ class _LoginScreenState extends State<LoginScreen> {
     final confirmPassword = _confirmPasswordController.text.trim();
 
     if (!isLogin && name.isEmpty) {
-      _showMessage(
-        'Ops!',
-        'Informe o nome do personagem.',
-        ContentType.warning,
-      );
+      _showMessage('Ops!', 'Informe o nome do personagem.', ContentType.warning);
       return;
     }
-
     if (email.isEmpty || password.isEmpty) {
-      _showMessage(
-        'Ops!',
-        'Preencha os campos de e-mail e senha.',
-        ContentType.warning,
-      );
+      _showMessage('Ops!', 'Preencha os campos de e-mail e senha.', ContentType.warning);
       return;
     }
-
     if (!email.contains('@')) {
       _showMessage('Ops!', 'Digite um e-mail válido.', ContentType.warning);
       return;
     }
-
     if (password.length < 6) {
-      _showMessage(
-        'Ops!',
-        'A senha deve ter no mínimo 6 caracteres.',
-        ContentType.warning,
-      );
+      _showMessage('Ops!', 'A senha deve ter no mínimo 6 caracteres.', ContentType.warning);
       return;
     }
-
     if (!isLogin && password != confirmPassword) {
       _showMessage('Ops!', 'As senhas não coincidem.', ContentType.warning);
       return;
@@ -175,28 +159,40 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    final success = isLogin
-        ? await _authService.login(email, password)
-        : await _authService.register(email, password, name);
-    if (!mounted) return;
-
-    setState(() => _isLoading = false);
-
-    if (success) {
-      _showMessage(
-        'Glória!',
-        isLogin ? 'Login realizado com sucesso!' : 'Conta criada com sucesso!',
-        ContentType.success,
-      );
-      return;
+    if (isLogin) {
+      final success = await _authService.login(email, password);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (success) {
+        _showMessage('Glória!', 'Login realizado com sucesso!', ContentType.success);
+      } else {
+        _showMessage(
+          'O feitiço falhou!',
+          'Não foi possível fazer login. Verifique suas credenciais.',
+          ContentType.failure,
+        );
+      }
     } else {
-      _showMessage(
-        'O feitiço falhou!',
-        isLogin
-            ? 'Não foi possível fazer login. Verifique suas credenciais.'
-            : 'Não foi possível criar a conta. E-mail talvez já cadastrado.',
-        ContentType.failure,
-      );
+      final errorCode = await _authService.registerWithError(email, password, name);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (errorCode == null) {
+        _showMessage('Glória!', 'Conta criada com sucesso!', ContentType.success);
+      } else if (errorCode == 'email-already-in-use') {
+        _showMessage(
+          'Herói já existe!',
+          'Este e-mail já está registrado no sistema. Use a opção de login para entrar.',
+          ContentType.warning,
+        );
+      } else if (errorCode == 'weak-password') {
+        _showMessage('Ops!', 'Senha muito fraca. Use pelo menos 6 caracteres.', ContentType.warning);
+      } else {
+        _showMessage(
+          'O feitiço falhou!',
+          'Não foi possível criar a conta. Tente novamente.',
+          ContentType.failure,
+        );
+      }
     }
   }
 

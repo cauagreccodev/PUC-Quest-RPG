@@ -4,12 +4,14 @@ import 'profile_overlay.dart' show MedievalColors;
 
 class DialogBox extends StatefulWidget{
   final String characterName;
+  final List<String>? characterNames;
   final List<String> messages;
   final VoidCallback? onFinished;
 
   const DialogBox({
     super.key,
     required this.characterName,
+    this.characterNames,
     required this.messages,
     this.onFinished,
   });
@@ -170,7 +172,9 @@ class _DialogBox extends State<DialogBox> with SingleTickerProviderStateMixin {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  widget.characterName.toUpperCase(),
+                                  (widget.characterNames != null && index < widget.characterNames!.length
+                                      ? widget.characterNames![index]
+                                      : widget.characterName).toUpperCase(),
                                   style: const TextStyle(
                                     color: MedievalColors.goldDark,
                                     fontSize: 10,
@@ -270,7 +274,9 @@ class _DialogBox extends State<DialogBox> with SingleTickerProviderStateMixin {
                           children: [
                             // Character Name + History Button
                             Text(
-                              widget.characterName.toUpperCase(),
+                              (widget.characterNames != null && _currentIndex < widget.characterNames!.length
+                                  ? widget.characterNames![_currentIndex]
+                                  : widget.characterName).toUpperCase(),
                               style: const TextStyle(
                                 color: MedievalColors.gold,
                                 fontWeight: FontWeight.bold,

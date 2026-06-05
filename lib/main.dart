@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -151,6 +152,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   bool _initialized = false;
   bool _showGuide = true;
+  int? _completedStageDialog;
+  Timer? _autoSaveTimer;
 
   double? _lastMovedLat;
   double? _lastMovedLon;
@@ -159,8 +162,22 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _mapController = MapController();
+    // Auto-save a cada 5 segundos
+    _autoSaveTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      final playerState = Provider.of<PlayerStateModel>(context, listen: false);
+      final authService = Provider.of<AuthService>(context, listen: false);
+      playerState.saveGame(uid: authService.currentUser?.isAnonymous == true ? null : authService.currentUser?.uid);
+    });
   }
   AnimationController? _mapAnimationController;
+
+  @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    _mapAnimationController?.dispose();
+    super.dispose();
+  }
 
   void _animatedMapMove(LatLng destLocation, double destZoom) {
     try {
@@ -287,8 +304,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ), 1);
       // Concede a próxima chave
       pState.grantNextKey(estagio);
+
+      // Salva imediatamente ao completar o estágio
+      final authService = Provider.of<AuthService>(context, listen: false);
+      pState.saveGame(uid: authService.currentUser?.isAnonymous == true ? null : authService.currentUser?.uid);
       
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Boss Derrotado! Você recebeu recompensas e talvez uma nova chave!')));
+
+      setState(() {
+        _completedStageDialog = estagio;
+      });
     } else if (result == false) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Você fugiu ou foi derrotado... Tente novamente!')));
@@ -350,8 +375,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
               MarkerLayer(
                 markers: geoService.levels.map((level) {
-                  final isUnlocked = (level['unlocked'] as bool) && 
+                  final isUnlocked = (level['unlocked'] as bool) || 
                                      playerState.hasKeyForEstagio(level['estagio']);
+                  final isDefeated = playerState.isPhaseDefeated(level['id']);
                   return Marker(
                     point: LatLng(level['lat'], level['lon']),
                     width: 80,
@@ -359,6 +385,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     child: _MedievalMapMarker(
                       name: level['name'],
                       isUnlocked: isUnlocked,
+                      isDefeated: isDefeated,
                       onTap: () {
                         final distance = geoService.currentPosition != null
                             ? Geolocator.distanceBetween(
@@ -665,6 +692,55 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 },
               ),
             )
+          else if (_completedStageDialog != null)
+            Positioned(
+              bottom: 24,
+              left: 16,
+              right: 16,
+              child: DialogBox(
+                characterName: 'Mestre Ancião',
+                characterNames: _completedStageDialog == 6 ? ['Reitor', 'Equipe'] : null,
+                messages: _completedStageDialog == 6
+                    ? [
+                        'Parabéns! Você provou seu valor, superou as dependências e conquistou seu diploma! Uma jornada árdua, mas de muito aprendizado.',
+                        'Muito obrigado por jogar nosso jogo! A equipe agradece. Fiquem à espera de novos e emocionantes projetos!'
+                      ]
+                    : _completedStageDialog == 5
+                        ? [
+                        'Parabéns, $playerName!',
+                        'Você venceu todas as dependências e conquistou a Chave do Diploma!',
+                        'Vá agora mesmo até o Centro de Tecnologia (CT) para obter seu diploma e finalizar sua jornada!',
+                      ]
+                    : _completedStageDialog == 1
+                        ? [
+                            'Muito bem, você derrotou a Matemática Discreta!',
+                            'Sua próxima dependência é Algoritmos.',
+                            'Dirija-se à Biblioteca (Redes) para continuar sua jornada!',
+                          ]
+                        : _completedStageDialog == 2
+                            ? [
+                                'Incrível! Você superou os Algoritmos!',
+                                'O próximo desafio é Estruturas de Dados.',
+                                'Vá para o CT (Centro de Tecnologia) e prepare-se!',
+                              ]
+                            : _completedStageDialog == 3
+                                ? [
+                                    'Excelente! Estruturas de Dados já não é um problema!',
+                                    'Agora você deve enfrentar Banco de Dados.',
+                                    'Caminhe até a Entrada do H15 para o próximo Boss!',
+                                  ]
+                                : [
+                                    'Quase lá! Banco de Dados foi dominado!',
+                                    'Seu último desafio é Organização e Arquitetura de Computadores.',
+                                    'Siga para o H15 (Jogos Digitais) e conquiste a Chave do Diploma!',
+                                  ],
+                onFinished: () {
+                  setState(() {
+                    _completedStageDialog = null;
+                  });
+                },
+              ),
+            )
           else 
             // HUD - Bottom
             Positioned(
@@ -677,7 +753,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           // Explore Button Overlay when near a level
           if (currentLevel != null)
             Positioned(
-              bottom: 100,
+              bottom: (_showGuide || _completedStageDialog != null) ? 220 : 160,
               left: 0,
               right: 0,
               child: Center(
@@ -708,6 +784,35 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                             : MedievalColors.gold,
                         width: 2,
                       ),
+                    ),
+                    elevation: 10,
+                  ),
+                ),
+              ),
+            ),
+
+          // Concluir Curso Button (only when all phases are beaten)
+          if (playerState.isPhaseDefeated('estagio_5'))
+            Positioned(
+              bottom: (_showGuide || _completedStageDialog != null) ? 160 : 100, 
+              left: 0,
+              right: 0,
+              child: Center(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                     setState(() {
+                       _completedStageDialog = 6;
+                     });
+                  },
+                  icon: const Icon(Icons.school, color: MedievalColors.parchment),
+                  label: const Text('CONCLUIR CURSO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple[800],
+                    foregroundColor: MedievalColors.parchment,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: MedievalColors.gold, width: 2),
                     ),
                     elevation: 10,
                   ),
@@ -883,8 +988,9 @@ class _HorizontalMapScroll extends StatelessWidget {
           itemCount: levels.length,
           itemBuilder: (context, index) {
             final level = levels[index];
-            final isUnlocked = (level['unlocked'] as bool) && 
+            final isUnlocked = (level['unlocked'] as bool) || 
                                playerState.hasKeyForEstagio(level['estagio']);
+            final isDefeated = playerState.isPhaseDefeated(level['id']);
 
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -905,9 +1011,11 @@ class _HorizontalMapScroll extends StatelessWidget {
                   Icon(
                     isUnlocked ? Icons.outlined_flag : Icons.lock_outline,
                     size: 16,
-                    color: isUnlocked
-                        ? MedievalColors.emeraldLight
-                        : MedievalColors.textMuted.withAlpha(150),
+                    color: isDefeated 
+                        ? MedievalColors.gold 
+                        : (isUnlocked
+                            ? MedievalColors.emeraldLight
+                            : MedievalColors.textMuted.withAlpha(150)),
                   ),
 
                   const SizedBox(width: 6),
@@ -915,11 +1023,13 @@ class _HorizontalMapScroll extends StatelessWidget {
                   Text(
                     level['name'].toUpperCase(),
                     style: TextStyle(
-                      color: isUnlocked
-                          ? MedievalColors.parchment
-                          : MedievalColors.textMuted.withAlpha(150),
+                      color: isDefeated 
+                          ? Colors.greenAccent
+                          : (isUnlocked
+                              ? MedievalColors.parchment
+                              : MedievalColors.textMuted.withAlpha(150)),
                       fontSize: 11,
-                      fontWeight: isUnlocked
+                      fontWeight: isUnlocked || isDefeated
                           ? FontWeight.bold
                           : FontWeight.normal,
                       letterSpacing: 1.0,
@@ -938,11 +1048,13 @@ class _HorizontalMapScroll extends StatelessWidget {
 class _MedievalMapMarker extends StatelessWidget {
   final String name;
   final bool isUnlocked;
+  final bool isDefeated;
   final VoidCallback onTap;
 
   const _MedievalMapMarker({
     required this.name,
     required this.isUnlocked,
+    this.isDefeated = false,
     required this.onTap,
   });
 
@@ -1000,7 +1112,7 @@ class _MedievalMapMarker extends StatelessWidget {
                 padding: const EdgeInsets.all(6),
                 child: Icon(
                   isUnlocked ? Icons.fort : Icons.lock_outline_rounded,
-                  color: isUnlocked ? MedievalColors.gold : Colors.grey[600],
+                  color: isDefeated ? MedievalColors.gold : (isUnlocked ? MedievalColors.gold : Colors.grey[600]),
                   size: 18,
                 ),
               ),

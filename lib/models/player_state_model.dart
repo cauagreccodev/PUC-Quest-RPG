@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../database/firestore_service.dart';
 
 class GameItem {
@@ -216,18 +218,40 @@ class PlayerStateModel extends ChangeNotifier {
     if (uid != null) {
       try {
         final db = FirestoreService();
-        final save = await db.getActiveSave(uid);
+        final user = FirebaseAuth.instance.currentUser;
+        
+        // Verifica e recria o perfil no Firestore se foi deletado manualmente
+        if (user != null && !user.isAnonymous) {
+          final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+          if (!userDoc.exists) {
+             print('Recriando perfil de usuário ausente no Firestore...');
+             await db.createUserProfile(user);
+          }
+        }
+
+        final gameData = {
+          'hp': _hp,
+          'maxHp': _maxHp,
+          'currentPhase': _currentPhase,
+          'inventory': _inventory.map((i) => i.toJson()).toList(),
+          'defeatedPhases': _defeatedPhases,
+          'lastSavedAt': DateTime.now().toIso8601String(),
+        };
+
+        var save = await db.getActiveSave(uid);
+        // Se não existe save no Firestore, cria um agora
+        if (save == null) {
+          await db.createNewSave(uid);
+          save = await db.getActiveSave(uid);
+        }
         if (save != null) {
           final saveId = save['saveId'] as String;
-          final inventoryData = _inventory.map((i) => i.toJson()).toList();
-          await db.updateGameSave(saveId, {
-            'hp': _hp,
-            'maxHp': _maxHp,
-            'currentPhase': _currentPhase,
-            'inventory': inventoryData,
-            'defeatedPhases': _defeatedPhases,
-          });
+          // Salva na coleção saves
+          await db.updateGameSave(saveId, gameData);
         }
+
+        // Espelha os dados do jogo também na coleção users
+        await db.updateUserGameData(uid, gameData);
       } catch (e) {
         print('Erro ao salvar no Firestore: $e');
       }

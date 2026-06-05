@@ -31,14 +31,23 @@
 
 ## 🎨 Design do Jogo e Lore
 
+Você assume o papel de um universitário que acabou pegando dependência (DP) em várias matérias cruciais do 1º e 2º ano da faculdade. Para finalmente conseguir o seu tão sonhado diploma, você precisará enfrentar essas disciplinas como verdadeiros desafios!
+
+A jornada é dividida em estágios baseados nas matérias em que o jogador pegou dependência:
+- **Estágio 1:** Matemática Discreta
+- **Estágio 2:** Algoritmos e Lógica de Programação
+- **Estágio 3:** Estruturas de Dados I e II
+- **Estágio 4:** Banco de Dados I e II
+- **Estágio 5:** Organização e Arquitetura de Computadores
+
+Para progredir e obter a **Chave do Diploma**, você deve explorar o campus andando fisicamente até as áreas e derrotar o Boss de cada estágio com seu conhecimento. Ao vencer todos os desafios, a chave do diploma desbloqueará uma funcionalidade especial no CT (Centro de Tecnologia) da PUC no final do jogo!
+
 ### Os Centros Acadêmicos (Domínios)
-O campus foi dominado e dividido em núcleos corrompidos:
+O campus foi dominado e dividido em núcleos corrompidos onde os Bosses das matérias se encontram:
 - **CEATEC (Laranja 🟠):** Engenharias e Tecnologia. Máquinas fora de controle e algoritmos rebeldes.
 - **CEA (Vermelho 🔴):** Economia e Administração.
 - **CLC (Azul 🔵):** Linguagem e Comunicação.
 - **CCHSA (Amarelo 🟡):** Humanas e Sociais.
-
-Para progredir e obter as **Chaves** de cada núcleo, você deve explorar a região andando fisicamente até ela e derrotar o Boss de cada estágio com seu conhecimento!
 
 ---
 

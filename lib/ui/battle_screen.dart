@@ -223,7 +223,8 @@ class _BattleScreenState extends State<BattleScreen>
         setState(() {
           _quizzes = quizzes;
           bossName = fetchedBossName;
-          battleLog = '$bossName apareceu! Vá, SOLDADO!';
+          final pName = FirebaseAuth.instance.currentUser?.displayName?.toUpperCase() ?? 'VISITANTE';
+          battleLog = '$bossName apareceu! Vá, $pName!';
           isLoadingQuizzes = false;
         });
       }
@@ -302,18 +303,19 @@ class _BattleScreenState extends State<BattleScreen>
         (expectedIndex == -1 && selectedIndex == 0)) {
       // Resposta correta: ataca
       int damage = 20 + _rng.nextInt(16); // Dano entre 20 e 35
+      final pName = FirebaseAuth.instance.currentUser?.displayName?.toUpperCase() ?? 'VISITANTE';
       if (_iraBoostActive) {
         damage *= 2;
         _iraBoostActive = false;
         _executePlayerAction(
           damage: damage,
           logText:
-              'Resposta Correta!\nCom a Erva da Ira, SOLDADO causou DANO DUPLO!',
+              'Resposta Correta!\nCom a Erva da Ira, $pName causou DANO DUPLO!',
         );
       } else {
         _executePlayerAction(
           damage: damage,
-          logText: 'Resposta Correta!\nSOLDADO usou Luta!',
+          logText: 'Resposta Correta!\n$pName usou Luta!',
         );
       }
     } else {
@@ -437,9 +439,10 @@ class _BattleScreenState extends State<BattleScreen>
     }
 
     final damage = 18 + _rng.nextInt(15);
+    final pName = FirebaseAuth.instance.currentUser?.displayName?.toUpperCase() ?? 'VISITANTE';
     _executePlayerAction(
       damage: damage,
-      logText: 'SOLDADO usou Pulso Quântico!',
+      logText: '$pName usou Pulso Quântico!',
       nextSkillCooldown: 2,
     );
   }
@@ -788,7 +791,7 @@ class _BattleScreenState extends State<BattleScreen>
                       level: playerLevel,
                       playerName:
                           FirebaseAuth.instance.currentUser?.displayName ??
-                          'Soldado',
+                          'Visitante',
                     ),
                   ),
                 ),

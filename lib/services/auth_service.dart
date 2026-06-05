@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../database/firestore_service.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -18,7 +19,11 @@ class AuthService extends ChangeNotifier {
   // Login
   Future<bool> login(String email, String password) async {
     try {
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final credential = await _auth.signInWithEmailAndPassword(email: email, password: password);
+      // Recria o perfil no Firestore caso tenha sido deletado manualmente
+      if (credential.user != null) {
+        await FirestoreService().createUserProfile(credential.user!);
+      }
       notifyListeners();
       return true;
     } catch(e) {
@@ -27,8 +32,8 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Registro
-  Future<bool> register(String email, String password, String name) async {
+  // Registro - retorna null em caso de sucesso, ou uma String com o código do erro
+  Future<String?> registerWithError(String email, String password, String name) async {
     try {
       UserCredential credential = await _auth.createUserWithEmailAndPassword(
         email: email, 
@@ -38,21 +43,24 @@ class AuthService extends ChangeNotifier {
       await credential.user!.updateDisplayName(name);
 
       if (credential.user != null) {
-        await _firestore.collection('users').doc(credential.user!.uid).set({
-          'name': name,
-          'email': email,
-          'uid': credential.user!.uid,
-          'activeSaveId': '',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        await FirestoreService().createUserProfile(credential.user!);
       }
 
       notifyListeners();
-      return true;
+      return null; // sucesso
+    } on FirebaseAuthException catch (e) {
+      print('FirebaseAuthException ao registrar: ${e.code}');
+      return e.code; // ex: 'email-already-in-use'
     } catch(e) {
       print('Erro ao registrar: $e');
-      return false;
+      return 'unknown';
     }
+  }
+
+  // Mantido por compatibilidade (chama registerWithError internamente)
+  Future<bool> register(String email, String password, String name) async {
+    final error = await registerWithError(email, password, name);
+    return error == null;
   }
 
   // Logout
@@ -67,7 +75,12 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _auth.signInAnonymously();
+      final userCredential = await _auth.signInAnonymously();
+      final user = userCredential.user;
+      if (user != null) {
+        // Usuário anônimo (Visitante) não salva perfil no Firebase,
+        // jogará apenas localmente no SharedPreferences.
+      }
       _isLoading = false;
       notifyListeners();
       return true;
@@ -103,16 +116,8 @@ class AuthService extends ChangeNotifier {
       final User? user = userCredential.user;
 
       if (user != null) {
-        final doc = await _firestore.collection('users').doc(user.uid).get();
-        if (!doc.exists) {
-          await _firestore.collection('users').doc(user.uid).set({
-            'name': user.displayName ?? '',
-            'email': user.email ?? '',
-            'uid': user.uid,
-            'activeSaveId': '',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-        }
+        // Cria perfil e save no Firestore se ainda não existir
+        await FirestoreService().createUserProfile(user);
       }
 
       _isLoading = false;
@@ -187,17 +192,7 @@ class AuthService extends ChangeNotifier {
 
       if (user != null) {
         await user.updateDisplayName(name);
-        
-        final doc = await _firestore.collection('users').doc(user.uid).get();
-        if (!doc.exists) {
-          await _firestore.collection('users').doc(user.uid).set({
-            'name': name,
-            'email': email,
-            'uid': user.uid,
-            'activeSaveId': '',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-        }
+        await FirestoreService().createUserProfile(user);
       }
 
       _isLoading = false;
