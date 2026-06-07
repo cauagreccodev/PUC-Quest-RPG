@@ -44,10 +44,11 @@ Para progredir e obter a **Chave do Diploma**, você deve explorar o campus anda
 
 ### Os Centros Acadêmicos (Domínios)
 O campus foi dominado e dividido em núcleos corrompidos onde os Bosses das matérias se encontram:
-- **CEATEC (Laranja 🟠):** Engenharias e Tecnologia. Máquinas fora de controle e algoritmos rebeldes.
-- **CEA (Vermelho 🔴):** Economia e Administração.
-- **CLC (Azul 🔵):** Linguagem e Comunicação.
-- **CCHSA (Amarelo 🟡):** Humanas e Sociais.
+- **Praça de Alimentação:** Estágio 1 - Matemática Discreta.
+- **Biblioteca e Mescla:** Estágio 2 - Algoritmos e Lógica de Programação.
+- **CT da PUC:** Estágio 3 - Estruturas e Recuperação de Dados I e II.
+- **Entrada do H15:** Estágio 4 - Banco de Dados I e II.
+- **H15 (Ambiente do curso de Jogos Digitais):** Estágio 5 - Organização e Arquitetura de Computadores.
 
 ---
 
