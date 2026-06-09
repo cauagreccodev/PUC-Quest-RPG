@@ -118,8 +118,8 @@ class _DialogBox extends State<DialogBox> with SingleTickerProviderStateMixin {
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
             color: MedievalColors.woodDark.withAlpha(240),
-            border: const Border(
-              top: BorderSide(color: MedievalColors.gold, width: 3),
+            border: Border.all(
+              color: MedievalColors.gold, width: 3
             ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: const [

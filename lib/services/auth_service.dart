@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../database/firestore_service.dart';
 
 class AuthService extends ChangeNotifier {
@@ -97,7 +98,10 @@ class AuthService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: kIsWeb ? '106292251398-s8dl9m4o5jvppd0669m8r6tu4qrpm3j6.apps.googleusercontent.com' : null,
+      );
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
         _isLoading = false;
@@ -139,7 +143,10 @@ class AuthService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: kIsWeb ? '106292251398-s8dl9m4o5jvppd0669m8r6tu4qrpm3j6.apps.googleusercontent.com' : null,
+      );
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         _isLoading = false;
         notifyListeners();

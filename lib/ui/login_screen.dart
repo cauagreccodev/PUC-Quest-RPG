@@ -81,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleGoogleLogin() async {
     setState(() => _isLoading = true);
-    final success = await _authService.loginWithProvider('Google');
+    final success = await _authService.signInWithGoogle();
 
     if (mounted) {
       setState(() => _isLoading = false);

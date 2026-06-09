@@ -23,6 +23,12 @@ import 'package:geolocator/geolocator.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Travar a orientação apenas para modo retrato (vertical)
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
   // Força a exibição da barra de status e navegação (sai do fullscreen automático)
   await SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,
