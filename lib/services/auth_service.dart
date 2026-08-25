@@ -85,6 +85,11 @@ class AuthService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return true;
+    } on FirebaseAuthException catch (e) {
+      print('FirebaseAuthException no login de provedor: ${e.code} - ${e.message}');
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e) {
       print('Erro no login de provedor: $e');
       _isLoading = false;

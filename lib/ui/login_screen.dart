@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!success) {
         _showMessage(
           'O feitiço falhou!',
-          'Falha ao tentar entrar como visitante.',
+          'Verifique o acesso anônimo e a API key do Firebase para esta plataforma.',
           ContentType.failure,
         );
       }
