@@ -88,7 +88,6 @@ flutter run -d chrome
 *   **Rodrigo de Faria Perico (22004955):** Developer & logic.
 *   **Gustavo Antunes (25013281):** Developer & logic.
 *   **Pedro Henrique Vieira Lima (25018202):** Developer & logic.
-*   **Kaue Rodrigues Seixas (23011884):** Developer & logic.
 
 ---
 
